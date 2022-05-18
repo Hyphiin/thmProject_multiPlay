@@ -1,11 +1,29 @@
 <template>
   <q-page class="row items-center justify-evenly">
     <div ref="gameContainer" class="game-container"></div>
+    <div class="player-info">
+      <div>
+        <q-input
+          outlined
+          v-model="playerNameInput"
+          label="Dein Name"
+          bg-color="white"
+        />
+      </div>
+      <div>
+        <q-btn
+          color="green"
+          text-color="white"
+          label="Farbe wechseln"
+          @click="changeColor"
+        />
+      </div>
+    </div>
   </q-page>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue';
+import { defineComponent, onMounted, ref, watch } from 'vue';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import {
   getDatabase,
@@ -15,14 +33,16 @@ import {
   onValue,
   onChildAdded,
   DatabaseReference,
+  onChildRemoved,
+  update,
 } from 'firebase/database';
 import { KeyPressListener } from 'components/KeyPressListener';
 
 interface PlayerElements {
-  [key: string]: string | HTMLDivElement;
+  [key: string]: HTMLDivElement;
 }
 interface Players {
-  [key: string]: string | DatabaseEntry;
+  [key: string]: DatabaseEntry;
 }
 
 interface DatabaseEntry {
@@ -33,6 +53,16 @@ interface DatabaseEntry {
   x: number;
   y: number;
   coins: number;
+}
+
+interface MapData {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  blockedSpaces: {
+    [key: string]: boolean;
+  };
 }
 
 export default defineComponent({
@@ -51,6 +81,22 @@ export default defineComponent({
     // const gameContainer = document.querySelector('.game-container');
     const gameContainer = ref<HTMLElement>();
 
+    //updates Player Name
+    const playerNameInput = ref<string>();
+    watch(playerNameInput, (newValue) => {
+      update(playerRef, {
+        name: newValue,
+      });
+    });
+    //updates Player Color
+    const changeColor = () => {
+      const mySkinIndex = playerColors.indexOf(players[playerId].color);
+      const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
+      update(playerRef, {
+        color: nextColor,
+      });
+    };
+
     const initGame = () => {
       new KeyPressListener('ArrowUp', () => handleArrowPress(0, -1));
       new KeyPressListener('ArrowDown', () => handleArrowPress(0, 1));
@@ -62,7 +108,6 @@ export default defineComponent({
 
       //fires when change occurs
       onValue(allPlayersRef, (snapshot) => {
-        console.log('onValue fired');
         players = snapshot.val() || {};
         Object.keys(players).forEach((key) => {
           const characterState = players[key] as DatabaseEntry;
@@ -122,30 +167,37 @@ export default defineComponent({
           gameContainer.value?.appendChild(characterElement);
         }
       });
+
+      //remove character DOM Element when they leave
+      onChildRemoved(allPlayersRef, (snapshot) => {
+        const removedKey = snapshot.val().id;
+        const tempVar = playerElements[removedKey] as HTMLDivElement;
+        gameContainer.value?.removeChild(tempVar);
+
+        delete playerElements[removedKey];
+      });
     };
 
     //*****Key Events */
 
     const handleArrowPress = (xChange: number, yChange: number) => {
-      const tempVar = players[playerId] as DatabaseEntry;
-      const newX = tempVar.x + xChange;
-      const newY = tempVar.y + yChange;
+      const newX = players[playerId].x + xChange;
+      const newY = players[playerId].y + yChange;
 
-      if (true) {
+      if (!isSolid(newX, newY)) {
+        console.log(isSolid(newX, newY));
         //move next space
-        tempVar.x = newX;
-        tempVar.y = newY;
+        players[playerId].x = newX;
+        players[playerId].y = newY;
         if (xChange === 1) {
-          tempVar.direction = 'right';
+          players[playerId].direction = 'right';
         }
         if (xChange === -1) {
-          tempVar.direction = 'left';
+          players[playerId].direction = 'left';
         }
         if (playerRef) {
-          set(playerRef, tempVar);
+          set(playerRef, players[playerId]);
         }
-
-        console.log(tempVar);
       }
     };
 
@@ -172,14 +224,19 @@ export default defineComponent({
         // https://firebase.google.com/docs/reference/js/firebase.User
         playerId = user.uid;
 
+        const name = createName();
+        playerNameInput.value = name;
+
+        const { x, y } = getRandomSafeSpot();
+
         playerRef = storageRef(db, 'players/' + playerId);
         set(playerRef, {
           id: playerId,
-          name: createName(),
+          name,
           direction: 'right',
           color: randomFromArray(playerColors),
-          x: 3,
-          y: 10,
+          x,
+          y,
           coins: 0,
         });
 
@@ -192,18 +249,9 @@ export default defineComponent({
     });
 
     //*****helper Functions*****
-    const instanceOfDatabaseEntry = (object: any): object is DatabaseEntry => {
-      if (object && object.inputData) {
-        return 'inputData' in object; // true
-      }
-      return false;
-    };
-    const randomFromArray = (array: string[]) => {
+    const randomFromArray = (array: any[]) => {
       return array[Math.floor(Math.random() * array.length)];
     };
-    // const getKeyString = (x: number, y: number): string => {
-    //   return `${x}x${y}`;
-    // };
 
     //create a randome start name
     const createName = () => {
@@ -248,7 +296,76 @@ export default defineComponent({
     // Options for Player Colors... these are in the same order as our sprite sheet
     const playerColors = ['blue', 'red', 'orange', 'yellow', 'green', 'purple'];
 
-    return { gameContainer };
+    const getKeyString = (x: number, y: number): string => {
+      return `${x}x${y}`;
+    };
+    //blocked spaces
+    const mapData: MapData = {
+      minX: 1,
+      maxX: 14,
+      minY: 4,
+      maxY: 12,
+      blockedSpaces: {
+        '7x4': true,
+        '1x11': true,
+        '12x10': true,
+        '4x7': true,
+        '5x7': true,
+        '6x7': true,
+        '8x6': true,
+        '9x6': true,
+        '10x6': true,
+        '7x9': true,
+        '8x9': true,
+        '9x9': true,
+      },
+    };
+    //returns true, if space is blocked
+    const isSolid = (x: number, y: number) => {
+      const blockedNextSpace = mapData.blockedSpaces[getKeyString(x, y)];
+      if (
+        blockedNextSpace ||
+        x >= mapData.maxX ||
+        x < mapData.minX ||
+        y >= mapData.maxY ||
+        y < mapData.minY
+      ) {
+        return true;
+      } else {
+        return false;
+      }
+    };
+    //returns a randome StartSpot
+    function getRandomSafeSpot() {
+      //We don't look things up by key here, so just return an x/y
+      return randomFromArray([
+        { x: 1, y: 4 },
+        { x: 2, y: 4 },
+        { x: 1, y: 5 },
+        { x: 2, y: 6 },
+        { x: 2, y: 8 },
+        { x: 2, y: 9 },
+        { x: 4, y: 8 },
+        { x: 5, y: 5 },
+        { x: 5, y: 8 },
+        { x: 5, y: 10 },
+        { x: 5, y: 11 },
+        { x: 11, y: 7 },
+        { x: 12, y: 7 },
+        { x: 13, y: 7 },
+        { x: 13, y: 6 },
+        { x: 13, y: 8 },
+        { x: 7, y: 6 },
+        { x: 7, y: 7 },
+        { x: 7, y: 8 },
+        { x: 8, y: 8 },
+        { x: 10, y: 8 },
+        { x: 8, y: 8 },
+        { x: 11, y: 4 },
+      ]);
+    }
+
+    return { gameContainer, playerNameInput, changeColor };
   },
 });
 </script>
