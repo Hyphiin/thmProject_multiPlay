@@ -6,6 +6,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
 export default defineComponent({
   name: 'CoinGame',
@@ -13,14 +14,28 @@ export default defineComponent({
   setup() {
     //helper Functions
 
-    const randomFromArray = (array: [any]): any => {
-      return array[Math.floor(Math.random() * array.length)];
-    };
-    const getKeyString = (x: number, y: number): string => {
-      return `${x}x${y}`;
-    };
+    // const randomFromArray = (array: [any]): any => {
+    //   return array[Math.floor(Math.random() * array.length)];
+    // };
+    // const getKeyString = (x: number, y: number): string => {
+    //   return `${x}x${y}`;
+    // };
 
-    //firebase.auth().signInAnonymously();
+    const auth = getAuth();
+    signInAnonymously(auth)
+      .then(() => {
+        // Signed in..
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(
+          'So sorry, something went wrong! errorCode: ' +
+            errorCode +
+            ' | errorMessage: ' +
+            errorMessage
+        );
+      });
 
     return {};
   },
@@ -28,27 +43,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: linear-gradient(
-    180deg,
-    #64beff -50%,
-    #6e96ff 69.71%,
-    #2a65ff 150%
-  );
-  font-family: 'Source Sans Pro', sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .game-container {
   position: relative;
   width: 240px;
