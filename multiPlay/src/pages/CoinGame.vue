@@ -8,12 +8,13 @@
           v-model="playerNameInput"
           label="Dein Name"
           bg-color="white"
+          standout="bg-light-green-11 text-black"
         />
       </div>
       <div>
         <q-btn
-          color="green"
-          text-color="white"
+          color="light-green-13"
+          text-color="black"
           label="Farbe wechseln"
           @click="changeColor"
         />
@@ -35,14 +36,21 @@ import {
   DatabaseReference,
   onChildRemoved,
   update,
+  remove,
 } from 'firebase/database';
 import { KeyPressListener } from 'components/KeyPressListener';
 
+interface Players {
+  [key: string]: DatabaseEntry;
+}
 interface PlayerElements {
   [key: string]: HTMLDivElement;
 }
-interface Players {
-  [key: string]: DatabaseEntry;
+interface Coins {
+  [key: string]: boolean;
+}
+interface CoinElements {
+  [key: string]: HTMLDivElement;
 }
 
 interface DatabaseEntry {
@@ -77,6 +85,8 @@ export default defineComponent({
     let playerRef: DatabaseReference;
     let players: Players = {};
     let playerElements: PlayerElements = {};
+    let coins: Coins = {};
+    let coinElements: CoinElements = {};
 
     // const gameContainer = document.querySelector('.game-container');
     const gameContainer = ref<HTMLElement>();
@@ -95,6 +105,32 @@ export default defineComponent({
       update(playerRef, {
         color: nextColor,
       });
+    };
+
+    //place Coin
+    const placeCoin = () => {
+      const { x, y } = getRandomSafeSpot();
+      const coinRef = storageRef(db, `coins/${getKeyString(x, y)}`);
+      set(coinRef, {
+        x,
+        y,
+      });
+      const coinTimeouts = [2000, 3000, 4000, 5000];
+      setTimeout(() => {
+        placeCoin();
+      }, randomFromArray(coinTimeouts));
+    };
+
+    //grab coin
+    const attemptGrabCoin = (x: number, y: number) => {
+      const key = getKeyString(x, y);
+      if (coins[key]) {
+        //remove this key from data, then +1 player coins
+        remove(storageRef(db, `coins/${key}`));
+        update(playerRef, {
+          coins: players[playerId].coins + 1,
+        });
+      }
     };
 
     const initGame = () => {
@@ -176,6 +212,38 @@ export default defineComponent({
 
         delete playerElements[removedKey];
       });
+
+      onChildAdded(allCoinsRef, (snapshot) => {
+        const coin = snapshot.val();
+        const key: string = getKeyString(coin.x, coin.y);
+        coins[key] = true;
+
+        //create the Coin DOM Element
+        const coinElement = document.createElement('div');
+        coinElement.classList.add('Coin', 'grid-cell');
+        coinElement.innerHTML = `
+        <div class="Coin_shadow grid-cell"></div>
+        <div class="Coin_sprite grid-cell"></div>
+        `;
+        //Position the Element
+        const top = 16 * coin.y - 4 + 'px';
+        const left = 16 * coin.x + 'px';
+        coinElement.style.transform = `translate3d(${left}, ${top}, 0)`;
+        //Keep a reference for removal later and add to DOM
+        coinElements[key] = coinElement;
+        console.log(coinElement);
+        gameContainer.value?.appendChild(coinElement);
+      });
+
+      onChildRemoved(allCoinsRef, (snapshot) => {
+        const { x, y } = snapshot.val();
+        const keyToRemove = getKeyString(x, y);
+        gameContainer.value?.removeChild(coinElements[keyToRemove]);
+        delete coinElements[keyToRemove];
+      });
+
+      //Place the first coin
+      placeCoin();
     };
 
     //*****Key Events */
@@ -185,7 +253,6 @@ export default defineComponent({
       const newY = players[playerId].y + yChange;
 
       if (!isSolid(newX, newY)) {
-        console.log(isSolid(newX, newY));
         //move next space
         players[playerId].x = newX;
         players[playerId].y = newY;
@@ -197,6 +264,7 @@ export default defineComponent({
         }
         if (playerRef) {
           set(playerRef, players[playerId]);
+          attemptGrabCoin(newX, newY);
         }
       }
     };
