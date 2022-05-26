@@ -1,7 +1,7 @@
 export class KeyPressListener {
   keydownFunction: (event: KeyboardEvent) => void;
   keyupFunction: (event: KeyboardEvent) => void;
-  constructor(keyCode: string, callback: any) {
+  constructor(keyCode: string, callback: () => void) {
     let keySafe = true;
     this.keydownFunction = function (event: KeyboardEvent) {
       if (event.code === keyCode) {

@@ -38,7 +38,7 @@ import {
   update,
   remove,
 } from 'firebase/database';
-import { KeyPressListener } from 'components/KeyPressListener';
+import { KeyPressListener } from '../components/KeyPressListener';
 
 interface Players {
   [key: string]: DatabaseEntry;
@@ -71,6 +71,11 @@ interface MapData {
   blockedSpaces: {
     [key: string]: boolean;
   };
+}
+
+interface Coordinates {
+  x: number,
+  y: number
 }
 
 export default defineComponent({
@@ -118,7 +123,7 @@ export default defineComponent({
       const coinTimeouts = [2000, 3000, 4000, 5000];
       setTimeout(() => {
         placeCoin();
-      }, randomFromArray(coinTimeouts));
+      }, randomFromArray(coinTimeouts) as number);
     };
 
     //grab coin
@@ -149,11 +154,11 @@ export default defineComponent({
           const characterState = players[key] as DatabaseEntry;
           let el = playerElements[key];
           //update the dom
-          if (el instanceof HTMLDivElement) {
-            el.querySelector('.Character_name')!.textContent =
-              characterState.name;
-            el.querySelector('.Character_coins')!.textContent =
-              characterState.coins.toString();
+          if (el instanceof HTMLDivElement) {        
+            let temp = el.querySelector('.Character_name') as Element
+            temp.textContent = characterState.name;
+            let temp2 = el.querySelector('.Character_coins') as Element
+            temp2.textContent = characterState.coins.toString();
             el.setAttribute('data-color', characterState.color);
             el.setAttribute('data-direction', characterState.direction);
             const top = 16 * characterState.y - 4 + 'px';
@@ -188,10 +193,10 @@ export default defineComponent({
           characterElement instanceof HTMLDivElement &&
           characterElement !== null
         ) {
-          characterElement.querySelector('.Character_name')!.textContent =
-            addedPlayer.name;
-          characterElement.querySelector('.Character_coins')!.textContent =
-            addedPlayer.coins;
+          let temp = characterElement.querySelector('.Character_name') as Element
+          temp.textContent = addedPlayer.name;
+          let temp2 =characterElement.querySelector('.Character_coins') as Element
+          temp2.textContent =  addedPlayer.coins;
           characterElement.setAttribute('data-color', addedPlayer.color);
           characterElement.setAttribute(
             'data-direction',
@@ -317,7 +322,7 @@ export default defineComponent({
     });
 
     //*****helper Functions*****
-    const randomFromArray = (array: any[]) => {
+    const randomFromArray = (array: string[] | number[] | Coordinates[]): string | number | Coordinates => {
       return array[Math.floor(Math.random() * array.length)];
     };
 
@@ -404,9 +409,9 @@ export default defineComponent({
       }
     };
     //returns a randome StartSpot
-    function getRandomSafeSpot() {
+    function getRandomSafeSpot():Coordinates {
       //We don't look things up by key here, so just return an x/y
-      return randomFromArray([
+      const temp = randomFromArray([
         { x: 1, y: 4 },
         { x: 2, y: 4 },
         { x: 1, y: 5 },
@@ -430,7 +435,8 @@ export default defineComponent({
         { x: 10, y: 8 },
         { x: 8, y: 8 },
         { x: 11, y: 4 },
-      ]);
+      ]);      
+      return temp as Coordinates
     }
 
     return { gameContainer, playerNameInput, changeColor };

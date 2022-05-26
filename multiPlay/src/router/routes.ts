@@ -4,7 +4,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/CoinGame.vue') }],
+    children: [
+      { path: 'coin-game', component: () => import('pages/CoinGame.vue') },
+      { path: 'main-lobby', component: () => import('pages/MainLobby.vue') }
+    ],
   },
 
   // Always leave this as last one,
