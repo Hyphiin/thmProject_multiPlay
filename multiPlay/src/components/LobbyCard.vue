@@ -11,7 +11,7 @@
       <q-separator />
 
       <q-card-actions class="buttons">
-        <q-btn flat>Join Game</q-btn>
+        <q-btn flat @click="$emit('joinGame')">Join Game</q-btn>
         <q-btn flat icon="delete" @click="$emit('deleteLobby', lobbyId)"/>
       </q-card-actions>
     </q-card>
@@ -42,7 +42,6 @@ export default defineComponent({
     }
   },
   setup() {
-
     return {
     };
   },

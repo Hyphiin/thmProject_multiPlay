@@ -1,5 +1,4 @@
-export class LobbyInterface {
- 
+export class LobbyInterface { 
     playerId: string;
     lobbyId: number;
     gamemode: string;

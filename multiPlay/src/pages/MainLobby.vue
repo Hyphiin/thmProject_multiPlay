@@ -4,11 +4,12 @@
     <div class="lobby-div">
       <div class="lobby-card" v-for="lobby in lobbys" :key="lobby.lobbyId">
         <lobby-card 
-        :playerId="lobby.playerId"
-        :lobbyId="lobby.lobbyId"
-        :gamemode="lobby.gamemode" 
+        :playerId="playerId"
+        :lobbyId="lobbyId"
+        :gamemode="gamemode" 
         :currentPlayers="lobby.currentPlayers" 
         @deleteLobby="deleteLobby"
+        @joinGame="joinGame"
         />    
       </div>
     </div>
@@ -19,33 +20,109 @@
 import { LobbyInterface } from 'src/components/LobbyInterface';
 import { defineComponent, ref } from 'vue';
 import LobbyCard from '../components/LobbyCard.vue'
+import {
+  DatabaseReference,
+  getDatabase,
+  onDisconnect,
+  ref as storageRef,
+set,
+} from 'firebase/database';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import routes from 'src/router/routes';
 
 
 export default defineComponent({
   name: 'MainLobby',
   components: { LobbyCard },
   setup() {
+    // onMounted(() => {
+    //   initGame();
+    // }); 
+    
     const lobbys = ref<LobbyInterface[]>([])
     let tempId = 1;
 
-    const createNewLobby = () => {
-      lobbys.value.push(new LobbyInterface(tempId.toString(),tempId,'CoinGame',1))
-      tempId ++    
-    }
+    const db = getDatabase();
+    let playerId = ref<string>('');
+    let playerRef: DatabaseReference;
 
-    const deleteLobby = (deleteId: number) => { 
-    lobbys.value.forEach((element,idx) =>{
+    let lobbyId = playerId.value + tempId;
+    let lobbyRef: DatabaseReference;
+
+    const gamemode = "Coin-Game"
+   
+
+    //*****firebase stuff*****
+    const auth = getAuth();
+    signInAnonymously(auth)
+      .then(() => {
+        // Signed in..
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(
+          'So sorry, something went wrong! errorCode: ' +
+            errorCode +
+            ' | errorMessage: ' +
+            errorMessage
+        );
+      });
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in, see docs for a list of available properties
+        // https://firebase.google.com/docs/reference/js/firebase.User
+        playerId.value = user.uid;
+
+        const name = "Dulli";
+
+        playerRef = storageRef(db, 'players/' + playerId.value);
+        set(playerRef, {
+          id: playerId,
+          name,          
+        });
+
+        //remove Player from Firebase, whem disconnect
+        onDisconnect(playerRef).remove();
+      } else {
+        // User is signed out
+        // ...
+      }
+    });     
+
+
+    const createNewLobby = () => {
+      lobbyRef = storageRef(db, 'lobbys/' + playerId.value + tempId);
+        set(lobbyRef, {
+          id: playerId.value + tempId,
+          name: gamemode,          
+        });
+
+      lobbys.value.push(new LobbyInterface(tempId.toString(),tempId,'CoinGame',1))
+      tempId ++ 
+    }    
+
+    const deleteLobby = (deleteId: number) => {       
+      lobbys.value.forEach((element,idx) =>{
         if(element.lobbyId === deleteId){
           lobbys.value.splice(idx,1)          
         }
       })     
     }
 
+    const joinGame = () => {
+      console.log("MOIN")      
+    }
+
     return {
       LobbyCard,
       lobbys,
+      playerId,
+      lobbyId,
+      gamemode,
       createNewLobby,
-      deleteLobby
+      deleteLobby,
+      joinGame
     };
   },
 });
