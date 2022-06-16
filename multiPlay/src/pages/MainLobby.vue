@@ -2,7 +2,7 @@
   <q-page class="items-center justify-evenly">
     <q-btn class="new-game-btn" @click="createNewLobby">Create Game</q-btn>
     <div class="lobby-div">
-      <div class="lobby-card" v-for="lobby in lobbys" :key="lobby.lobbyId">
+      <div class="lobby-card" v-for="lobby in allLobbysArray" :key="lobby.lobbyId">
         <lobby-card 
         :playerId="playerId"
         :lobbyId="lobbyId"
@@ -23,6 +23,7 @@ import LobbyCard from '../components/LobbyCard.vue'
 import {
   DatabaseReference,
   getDatabase,
+  onChildAdded,
   onDisconnect,
   push,
   ref as storageRef,
@@ -43,7 +44,7 @@ export default defineComponent({
     // }); 
     const router = useRouter();
     
-    const lobbys = ref<LobbyInterface[]>([])
+    const allLobbysArray = ref<LobbyInterface[]>([])
     let tempId = 1;
 
     const db = getDatabase();
@@ -51,7 +52,7 @@ export default defineComponent({
     let playerRef: DatabaseReference;
 
     let lobbyId = playerId.value + tempId;
-    let lobbyRef: DatabaseReference;
+    let allLobbysRef: DatabaseReference;
 
     const gamemode = 'Coin-Game'
    
@@ -97,26 +98,36 @@ export default defineComponent({
 
 
     const createNewLobby = () => {
-      lobbyRef = storageRef(db, 'lobbys/' + playerId.value + tempId);
-      set(lobbyRef, {
+      allLobbysRef = storageRef(db, 'lobbys/' + playerId.value + tempId);
+      set(allLobbysRef, {
         id: playerId.value + tempId,
         playerId: playerId.value          
       });
+      const allPlayers = storageRef(db, `lobbys/${playerId.value + tempId}/players/${playerId.value}`);
+      set(allPlayers, {
+        id: playerId.value,          
+      });
+
       update(playerRef, {
           lobbyId: playerId.value + tempId       
         });
-
-      lobbys.value.push(new LobbyInterface(tempId.toString(),tempId,'CoinGame',1))
-      tempId ++ 
+      
+      tempId ++       
     }    
 
+    onChildAdded(storageRef(db, 'lobbys/'), () => {
+      allLobbysArray.value.push(new LobbyInterface(tempId.toString(),tempId,'CoinGame',1))
+    })
+
     const deleteLobby = (deleteId: number) => {       
-      lobbys.value.forEach((element,idx) =>{
+      allLobbysArray.value.forEach((element,idx) =>{
         if(element.lobbyId === deleteId){
-          lobbys.value.splice(idx,1)          
+          allLobbysArray.value.splice(idx,1)          
         }
       })     
     }
+
+     
 
     const joinGame = () => {
       console.log('MOIN') 
@@ -125,7 +136,7 @@ export default defineComponent({
 
     return {
       LobbyCard,
-      lobbys,
+      allLobbysArray,
       playerId,
       lobbyId,
       gamemode,
