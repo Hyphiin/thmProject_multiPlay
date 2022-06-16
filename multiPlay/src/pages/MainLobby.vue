@@ -24,11 +24,14 @@ import {
   DatabaseReference,
   getDatabase,
   onDisconnect,
+  push,
   ref as storageRef,
 set,
+update,
 } from 'firebase/database';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import routes from 'src/router/routes';
+import { useRouter } from 'vue-router';
 
 
 export default defineComponent({
@@ -38,6 +41,7 @@ export default defineComponent({
     // onMounted(() => {
     //   initGame();
     // }); 
+    const router = useRouter();
     
     const lobbys = ref<LobbyInterface[]>([])
     let tempId = 1;
@@ -49,7 +53,7 @@ export default defineComponent({
     let lobbyId = playerId.value + tempId;
     let lobbyRef: DatabaseReference;
 
-    const gamemode = "Coin-Game"
+    const gamemode = 'Coin-Game'
    
 
     //*****firebase stuff*****
@@ -69,17 +73,18 @@ export default defineComponent({
         );
       });
     onAuthStateChanged(auth, (user) => {
+      console.log('TEST')
       if (user) {
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
         playerId.value = user.uid;
 
-        const name = "Dulli";
+        const name = 'Dulli';
 
         playerRef = storageRef(db, 'players/' + playerId.value);
         set(playerRef, {
-          id: playerId,
-          name,          
+          id: playerId.value,
+          name: name,          
         });
 
         //remove Player from Firebase, whem disconnect
@@ -93,9 +98,12 @@ export default defineComponent({
 
     const createNewLobby = () => {
       lobbyRef = storageRef(db, 'lobbys/' + playerId.value + tempId);
-        set(lobbyRef, {
-          id: playerId.value + tempId,
-          name: gamemode,          
+      set(lobbyRef, {
+        id: playerId.value + tempId,
+        playerId: playerId.value          
+      });
+      update(playerRef, {
+          lobbyId: playerId.value + tempId       
         });
 
       lobbys.value.push(new LobbyInterface(tempId.toString(),tempId,'CoinGame',1))
@@ -111,7 +119,8 @@ export default defineComponent({
     }
 
     const joinGame = () => {
-      console.log("MOIN")      
+      console.log('MOIN') 
+      router.replace({ name: 'CoinGame' });     
     }
 
     return {

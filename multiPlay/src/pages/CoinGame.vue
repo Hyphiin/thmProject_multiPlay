@@ -37,6 +37,8 @@ import {
   onChildRemoved,
   update,
   remove,
+get,
+child,
 } from 'firebase/database';
 import { KeyPressListener } from '../components/KeyPressListener';
 
@@ -82,16 +84,21 @@ export default defineComponent({
   name: 'CoinGame',
   components: {},
   setup() {
-    onMounted(() => {
-      initGame();
-    });
     const db = getDatabase();
     let playerId: string;
+    let lobbyId = ref<string>('');
     let playerRef: DatabaseReference;
     let players: Players = {};
     let playerElements: PlayerElements = {};
     let coins: Coins = {};
     let coinElements: CoinElements = {};
+
+    watch(
+      () => lobbyId.value, 
+      () => {
+        initGame();
+      }
+    )
 
     // const gameContainer = document.querySelector('.game-container');
     const gameContainer = ref<HTMLElement>();
@@ -114,16 +121,18 @@ export default defineComponent({
 
     //place Coin
     const placeCoin = () => {
-      const { x, y } = getRandomSafeSpot();
-      const coinRef = storageRef(db, `coins/${getKeyString(x, y)}`);
-      set(coinRef, {
-        x,
-        y,
-      });
-      const coinTimeouts = [2000, 3000, 4000, 5000];
-      setTimeout(() => {
-        placeCoin();
-      }, randomFromArray(coinTimeouts) as number);
+      // if(lobbyId !== undefined){
+        const { x, y } = getRandomSafeSpot();
+        const coinRef = storageRef(db, `lobbys/${lobbyId.value}/coins/${getKeyString(x, y)}`);
+        set(coinRef, {
+          x,
+          y,
+        });
+        const coinTimeouts = [2000, 3000, 4000, 5000];
+        setTimeout(() => {
+          placeCoin();
+        }, randomFromArray(coinTimeouts) as number);
+      // }
     };
 
     //grab coin
@@ -131,7 +140,7 @@ export default defineComponent({
       const key = getKeyString(x, y);
       if (coins[key]) {
         //remove this key from data, then +1 player coins
-        remove(storageRef(db, `coins/${key}`));
+        remove(storageRef(db, `lobbys/${lobbyId.value}/coins/${key}`));
         update(playerRef, {
           coins: players[playerId].coins + 1,
         });
@@ -145,7 +154,8 @@ export default defineComponent({
       new KeyPressListener('ArrowLeft', () => handleArrowPress(-1, 0));
 
       const allPlayersRef = storageRef(db, 'players');
-      const allCoinsRef = storageRef(db, 'coins');
+      const allCoinsRef = storageRef(db, `lobbys/${lobbyId.value}/coins`);
+      console.log("ALLCOINSREF",allCoinsRef)
 
       //fires when change occurs
       onValue(allPlayersRef, (snapshot) => {
@@ -219,6 +229,7 @@ export default defineComponent({
       });
 
       onChildAdded(allCoinsRef, (snapshot) => {
+        console.log("SNAPSHOT", snapshot.val())
         const coin = snapshot.val();
         const key: string = getKeyString(coin.x, coin.y);
         coins[key] = true;
@@ -236,7 +247,6 @@ export default defineComponent({
         coinElement.style.transform = `translate3d(${left}, ${top}, 0)`;
         //Keep a reference for removal later and add to DOM
         coinElements[key] = coinElement;
-        console.log(coinElement);
         gameContainer.value?.appendChild(coinElement);
       });
 
@@ -248,7 +258,8 @@ export default defineComponent({
       });
 
       //Place the first coin
-      placeCoin();
+      placeCoin();    
+      
     };
 
     //*****Key Events */
@@ -303,9 +314,18 @@ export default defineComponent({
         const { x, y } = getRandomSafeSpot();
 
         playerRef = storageRef(db, 'players/' + playerId);
-        set(playerRef, {
-          id: playerId,
-          name,
+        get(child(playerRef, 'lobbyId')).then((snapshot) => {
+          if (snapshot.exists()) {
+            console.log(snapshot.val());
+            lobbyId.value = snapshot.val();
+          } else {
+            console.log("No data available");
+          }
+        }).catch((error) => {
+          console.error(error);
+        });
+
+        update(playerRef, {
           direction: 'right',
           color: randomFromArray(playerColors),
           x,
@@ -314,6 +334,7 @@ export default defineComponent({
         });
 
         //remove Player from Firebase, whem disconnect
+        console.log("!!!!!!!!!!!!!!!!!!!!",playerRef)
         onDisconnect(playerRef).remove();
       } else {
         // User is signed out
