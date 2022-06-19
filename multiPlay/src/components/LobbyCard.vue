@@ -1,17 +1,18 @@
 <template>
    <q-card class="my-card">
       <q-card-section class="bg-primary text-white">
-        <div class="text-h6">{{gamemode}}</div>
+        <div class="text-h6">{{lobbyName}}</div>
         <div class="subtitles">
+          <div class="text-subtitle">GAME: {{gamemode}}</div>
           <div class="text-subtitle">by {{playerId}}</div>
-          <div class="text-subtitle">Players: {{currentPlayers}}</div>
+          <div class="text-subtitle">Private: {{isPrivate}}</div>
         </div>
       </q-card-section>
 
       <q-separator />
 
       <q-card-actions class="buttons">
-        <q-btn flat @click="$emit('joinGame')">Join Game</q-btn>
+        <q-btn flat @click="$emit('joinGame', lobbyId)">Join Game</q-btn>
         <q-btn flat icon="delete" @click="$emit('deleteLobby', lobbyId)"/>
       </q-card-actions>
     </q-card>
@@ -32,12 +33,20 @@ export default defineComponent({
       type: String,
       required: true
     },
+    lobbyName:{
+      type: String,
+      required: true
+    },
     lobbyId:{
-      type: Number,
+      type: String,
       required: true
     },
     currentPlayers:{
       type: Number,
+      default: 1
+    },
+    isPrivate:{
+      type: Boolean,
       required: true
     }
   },
