@@ -40,13 +40,17 @@
 
 <script lang="ts">
 import { LobbyInterface } from 'src/components/LobbyInterface';
-import { defineComponent, ref } from 'vue';
+import { defineComponent, ref, watch } from 'vue';
 import LobbyCard from '../components/LobbyCard.vue'
 import {
+  child,
   DatabaseReference,
+  get,
   getDatabase,
   onChildAdded,
+  onChildRemoved,
   onDisconnect,
+  onValue,
   ref as storageRef,
   remove,
 set,
@@ -97,13 +101,21 @@ export default defineComponent({
         lobbyId: playerId.value + tempId       
       });
       
-      tempId ++       
+      tempId ++ 
     }    
 
     onChildAdded(storageRef(db, 'lobbys/'), (snapshot) => {
-      console.log(snapshot.val())
-      const addedLobby = snapshot.val();
+      const addedLobby = snapshot.val();      
       allLobbysArray.value.push(new LobbyInterface(addedLobby.id,addedLobby.lobbyName,addedLobby.playerId,addedLobby.gamemode,addedLobby.isPrivate))
+    })
+
+    onChildRemoved(storageRef(db, 'lobbys/'), (snapshot) => {
+      const removedLobby = snapshot.val();  
+      allLobbysArray.value.forEach((element,idx) =>{
+        if(element.lobbyId === removedLobby.id){
+          allLobbysArray.value.splice(idx,1)          
+        }
+      }) 
     })
 
     const deleteLobby = (deleteId: string) => {       
@@ -143,7 +155,6 @@ export default defineComponent({
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
         playerId.value = user.uid;
-
         const name = 'Dulli';
 
         playerRef = storageRef(db, 'players/' + playerId.value);
@@ -152,8 +163,17 @@ export default defineComponent({
           name: name,          
         });
 
-        //remove Player from Firebase, whem disconnect
-        onDisconnect(playerRef).remove();       
+        //remove Player from Firebase, whem disconnect  
+        onDisconnect(playerRef).remove().then(() => {
+          allLobbysArray.value.forEach(lobby => {
+            if(lobby.playerId === playerId.value){       
+              const deleteId = lobby.lobbyId
+              console.log("yay",deleteId)
+              remove(storageRef(db, `lobbys/${deleteId}`));
+            }
+          })          
+        })       
+        
       } else {
         // User is signed out
         // ...
@@ -161,6 +181,9 @@ export default defineComponent({
     });     
     //********************
    
+    // "$uid": {
+    //     	".delete": "auth != null && auth.uid == $uid",
+    //   	}, 
 
     return {
       LobbyCard,
@@ -192,3 +215,4 @@ export default defineComponent({
   flex-wrap: wrap;
 }
 </style>
+
