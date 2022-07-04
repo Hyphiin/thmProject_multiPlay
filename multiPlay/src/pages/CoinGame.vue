@@ -5,10 +5,11 @@
       <div>
         <q-input
           outlined
-          v-model="playerNameInput"
+          :model-value="playerNameInput"
           label="Dein Name"
           bg-color="white"
           standout="bg-light-green-11 text-black"
+          @update:model-value="(value) => changeName(value)"
         />
       </div>
       <div>
@@ -19,7 +20,6 @@
           @click="changeColor"
         />
       </div>
-       {{ $route.params.username }}
     </div>
   </q-page>
 </template>
@@ -90,20 +90,13 @@ export default defineComponent({
     const route = useRoute()
     
     let playerId: string;
-    let lobbyId = ref<string>("");
+    let lobbyId = ref<string>('');
     let playerRef: DatabaseReference;
     let playerLobbyRef: DatabaseReference;
     let players: Players = {};
     let playerElements: PlayerElements = {};
     let coins: Coins = {};
     let coinElements: CoinElements = {};
-
-    watch(
-      () => lobbyId.value, 
-      () => {
-        initGame();
-      }
-    )
 
     onMounted(() => {
       initGame();
@@ -114,11 +107,22 @@ export default defineComponent({
 
     //updates Player Name
     const playerNameInput = ref<string>();
-    watch(playerNameInput, (newValue) => {
-      update(playerLobbyRef, {
-        name: newValue,
-      });
-    });
+    // watch(playerNameInput, (newValue) => {
+    //   console.log(">>>>>>>>>>>",newValue)
+    //   update(playerLobbyRef, {
+    //     name: newValue,
+    //   });
+    // });
+
+    const changeName = (newValue: string | number | null) => {
+      if(typeof newValue === "string"){
+         playerNameInput.value = newValue
+        update(playerLobbyRef, {
+          name: newValue,
+        });
+      }     
+    };
+
     //updates Player Color
     const changeColor = () => {
       const mySkinIndex = playerColors.indexOf(players[playerId].color);
@@ -473,7 +477,7 @@ export default defineComponent({
       return temp as Coordinates
     }
 
-    return { gameContainer, playerNameInput, changeColor };
+    return { gameContainer, playerNameInput, changeColor, changeName };
   },
 });
 </script>
