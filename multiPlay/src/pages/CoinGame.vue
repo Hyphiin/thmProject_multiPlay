@@ -92,6 +92,7 @@ export default defineComponent({
     let playerId: string;
     let lobbyId = ref<string>("");
     let playerRef: DatabaseReference;
+    let playerLobbyRef: DatabaseReference;
     let players: Players = {};
     let playerElements: PlayerElements = {};
     let coins: Coins = {};
@@ -104,13 +105,17 @@ export default defineComponent({
       }
     )
 
+    onMounted(() => {
+      initGame();
+    })
+
     // const gameContainer = document.querySelector('.game-container');
     const gameContainer = ref<HTMLElement>();
 
     //updates Player Name
     const playerNameInput = ref<string>();
     watch(playerNameInput, (newValue) => {
-      update(playerRef, {
+      update(playerLobbyRef, {
         name: newValue,
       });
     });
@@ -118,7 +123,7 @@ export default defineComponent({
     const changeColor = () => {
       const mySkinIndex = playerColors.indexOf(players[playerId].color);
       const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
-      update(playerRef, {
+      update(playerLobbyRef, {
         color: nextColor,
       });
     };
@@ -145,7 +150,7 @@ export default defineComponent({
       if (coins[key]) {
         //remove this key from data, then +1 player coins
         remove(storageRef(db, `lobbys/${lobbyId.value}/coins/${key}`));
-        update(playerRef, {
+        update(playerLobbyRef, {
           coins: players[playerId].coins + 1,
         });
       }
@@ -156,7 +161,9 @@ export default defineComponent({
       new KeyPressListener('ArrowDown', () => handleArrowPress(0, 1));
       new KeyPressListener('ArrowRight', () => handleArrowPress(1, 0));
       new KeyPressListener('ArrowLeft', () => handleArrowPress(-1, 0));
+      lobbyId.value = route.params.lobbyId.toString()
 
+       
       const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
       const allCoinsRef = storageRef(db, `lobbys/${lobbyId.value}/coins`);
 
@@ -260,8 +267,7 @@ export default defineComponent({
       });
 
       //Place the first coin
-      placeCoin();    
-      
+      placeCoin(); 
     };
 
     //*****Key Events */
@@ -280,8 +286,8 @@ export default defineComponent({
         if (xChange === -1) {
           players[playerId].direction = 'left';
         }
-        if (playerRef) {
-          set(playerRef, players[playerId]);
+        if (playerLobbyRef) {
+          set(playerLobbyRef, players[playerId]);
           attemptGrabCoin(newX, newY);
         }
       }
@@ -315,7 +321,7 @@ export default defineComponent({
 
         const { x, y } = getRandomSafeSpot();
 
-        playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${playerId}`);
+        playerRef = storageRef(db, 'players' + playerId);       
         get(child(playerRef, 'lobbyId')).then((snapshot) => {
           if (snapshot.exists()) {
             lobbyId.value = snapshot.val();
@@ -325,18 +331,24 @@ export default defineComponent({
           }
         }).catch((error) => {
           console.error(error);
-        });
+        }).then(() => {
+          console.log(">>>>>>>>>", lobbyId.value)
+          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/`+playerId)
 
-        update(playerRef, {
-          direction: 'right',
-          color: randomFromArray(playerColors),
-          x,
-          y,
-          coins: 0,
-        });
+          update(playerLobbyRef, {
+            name: playerNameInput.value,
+            direction: 'right',
+            color: randomFromArray(playerColors),
+            x,
+            y,
+            coins: 0,
+          });
+        }
+        )        
 
         //remove Player from Firebase, whem disconnect
         onDisconnect(playerRef).remove();
+        onDisconnect(playerLobbyRef).remove();
       } else {
         // User is signed out
         // ...
