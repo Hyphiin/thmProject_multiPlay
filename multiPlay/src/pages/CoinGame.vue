@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref, watch } from 'vue';
+import { defineComponent, onMounted, ref } from 'vue';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import {
   getDatabase,
@@ -107,12 +107,6 @@ export default defineComponent({
 
     //updates Player Name
     const playerNameInput = ref<string>();
-    // watch(playerNameInput, (newValue) => {
-    //   console.log(">>>>>>>>>>>",newValue)
-    //   update(playerLobbyRef, {
-    //     name: newValue,
-    //   });
-    // });
 
     const changeName = (newValue: string | number | null) => {
       if(typeof newValue === "string"){
@@ -165,8 +159,9 @@ export default defineComponent({
       new KeyPressListener('ArrowDown', () => handleArrowPress(0, 1));
       new KeyPressListener('ArrowRight', () => handleArrowPress(1, 0));
       new KeyPressListener('ArrowLeft', () => handleArrowPress(-1, 0));
-      lobbyId.value = route.params.lobbyId.toString()
 
+      if(route.params.lobbyId){
+      lobbyId.value = route.params.lobbyId.toString()
        
       const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
       const allCoinsRef = storageRef(db, `lobbys/${lobbyId.value}/coins`);
@@ -272,6 +267,7 @@ export default defineComponent({
 
       //Place the first coin
       placeCoin(); 
+      }
     };
 
     //*****Key Events */
@@ -350,9 +346,10 @@ export default defineComponent({
         }
         )        
 
-        //remove Player from Firebase, whem disconnect
+        //remove Player from Firebase, when disconnect
         onDisconnect(playerRef).remove();
         onDisconnect(playerLobbyRef).remove();
+        
       } else {
         // User is signed out
         // ...
