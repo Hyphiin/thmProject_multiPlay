@@ -19,6 +19,7 @@
           @click="changeColor"
         />
       </div>
+       {{ $route.params.username }}
     </div>
   </q-page>
 </template>
@@ -41,6 +42,7 @@ get,
 child,
 } from 'firebase/database';
 import { KeyPressListener } from '../components/KeyPressListener';
+import { useRoute } from 'vue-router';
 
 interface Players {
   [key: string]: DatabaseEntry;
@@ -85,8 +87,10 @@ export default defineComponent({
   components: {},
   setup() {
     const db = getDatabase();
+    const route = useRoute()
+    
     let playerId: string;
-    let lobbyId = ref<string>('');
+    let lobbyId = ref<string>("");
     let playerRef: DatabaseReference;
     let players: Players = {};
     let playerElements: PlayerElements = {};
@@ -155,7 +159,6 @@ export default defineComponent({
 
       const allPlayersRef = storageRef(db, 'players');
       const allCoinsRef = storageRef(db, `lobbys/${lobbyId.value}/coins`);
-      console.log("ALLCOINSREF",allCoinsRef)
 
       //fires when change occurs
       onValue(allPlayersRef, (snapshot) => {
@@ -229,7 +232,6 @@ export default defineComponent({
       });
 
       onChildAdded(allCoinsRef, (snapshot) => {
-        console.log("SNAPSHOT", snapshot.val())
         const coin = snapshot.val();
         const key: string = getKeyString(coin.x, coin.y);
         coins[key] = true;
@@ -316,10 +318,10 @@ export default defineComponent({
         playerRef = storageRef(db, 'players/' + playerId);
         get(child(playerRef, 'lobbyId')).then((snapshot) => {
           if (snapshot.exists()) {
-            console.log(snapshot.val());
             lobbyId.value = snapshot.val();
           } else {
-            console.log("No data available");
+            lobbyId.value = route.params.lobbyId.toString()
+            console.log("Joined Lobby ID:",lobbyId.value);
           }
         }).catch((error) => {
           console.error(error);
@@ -334,7 +336,6 @@ export default defineComponent({
         });
 
         //remove Player from Firebase, whem disconnect
-        console.log("!!!!!!!!!!!!!!!!!!!!",playerRef)
         onDisconnect(playerRef).remove();
       } else {
         // User is signed out

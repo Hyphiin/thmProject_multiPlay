@@ -99,9 +99,14 @@ export default defineComponent({
 
       update(playerRef, {
         lobbyId: playerId.value + tempId       
-      });
+      });   
       
-      tempId ++ 
+
+      // router.replace({ name: 'CoinGame' });   
+      console.log("LOBBYID: ", playerId.value + tempId )
+      router.push({ name: 'CoinGame', params: { lobbyId: playerId.value + tempId  }})
+      
+      tempId ++    
     }    
 
     onChildAdded(storageRef(db, 'lobbys/'), (snapshot) => {
@@ -124,13 +129,17 @@ export default defineComponent({
           allLobbysArray.value.splice(idx,1)          
         }
       })     
-      console.log(deleteId)
       remove(storageRef(db, `lobbys/${deleteId}`));
     }     
 
     const joinGame = (lobbyId: string) => {
-      console.log('Lobby to join:', lobbyId) 
-      router.replace({ name: 'CoinGame' });     
+      const allPlayers = storageRef(db, `lobbys/${lobbyId}/players/${playerId.value}`);
+      set(allPlayers, {
+        id: playerId.value,          
+      });
+      // router.replace({ name: 'CoinGame' });  
+      console.log("LOBBYID: ", lobbyId)
+      router.push({ name: 'CoinGame', params: { lobbyId: lobbyId }})   
     }
 
     //*****firebase stuff*****
@@ -150,7 +159,6 @@ export default defineComponent({
         );
       });
     onAuthStateChanged(auth, (user) => {
-      console.log('TEST')
       if (user) {
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
@@ -168,7 +176,6 @@ export default defineComponent({
           allLobbysArray.value.forEach(lobby => {
             if(lobby.playerId === playerId.value){       
               const deleteId = lobby.lobbyId
-              console.log("yay",deleteId)
               remove(storageRef(db, `lobbys/${deleteId}`));
             }
           })          
