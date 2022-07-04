@@ -157,7 +157,7 @@ export default defineComponent({
       new KeyPressListener('ArrowRight', () => handleArrowPress(1, 0));
       new KeyPressListener('ArrowLeft', () => handleArrowPress(-1, 0));
 
-      const allPlayersRef = storageRef(db, 'players');
+      const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
       const allCoinsRef = storageRef(db, `lobbys/${lobbyId.value}/coins`);
 
       //fires when change occurs
@@ -315,7 +315,7 @@ export default defineComponent({
 
         const { x, y } = getRandomSafeSpot();
 
-        playerRef = storageRef(db, 'players/' + playerId);
+        playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${playerId}`);
         get(child(playerRef, 'lobbyId')).then((snapshot) => {
           if (snapshot.exists()) {
             lobbyId.value = snapshot.val();
