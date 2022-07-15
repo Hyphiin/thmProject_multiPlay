@@ -88,7 +88,7 @@ export default defineComponent({
   setup() {
     const db = getDatabase();
     const route = useRoute()
-    
+
     let playerId: string;
     let lobbyId = ref<string>('');
     let playerRef: DatabaseReference;
@@ -109,12 +109,12 @@ export default defineComponent({
     const playerNameInput = ref<string>();
 
     const changeName = (newValue: string | number | null) => {
-      if(typeof newValue === "string"){
+      if(typeof newValue === 'string'){
          playerNameInput.value = newValue
         update(playerLobbyRef, {
           name: newValue,
         });
-      }     
+      }
     };
 
     //updates Player Color
@@ -162,7 +162,7 @@ export default defineComponent({
 
       if(route.params.lobbyId){
       lobbyId.value = route.params.lobbyId.toString()
-       
+
       const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
       const allCoinsRef = storageRef(db, `lobbys/${lobbyId.value}/coins`);
 
@@ -173,7 +173,7 @@ export default defineComponent({
           const characterState = players[key] as DatabaseEntry;
           let el = playerElements[key];
           //update the dom
-          if (el instanceof HTMLDivElement) {        
+          if (el instanceof HTMLDivElement) {
             let temp = el.querySelector('.Character_name') as Element
             temp.textContent = characterState.name;
             let temp2 = el.querySelector('.Character_coins') as Element
@@ -266,7 +266,7 @@ export default defineComponent({
       });
 
       //Place the first coin
-      placeCoin(); 
+      placeCoin();
       }
     };
 
@@ -321,18 +321,18 @@ export default defineComponent({
 
         const { x, y } = getRandomSafeSpot();
 
-        playerRef = storageRef(db, 'players' + playerId);       
+        playerRef = storageRef(db, 'players' + playerId);
         get(child(playerRef, 'lobbyId')).then((snapshot) => {
           if (snapshot.exists()) {
             lobbyId.value = snapshot.val();
           } else {
             lobbyId.value = route.params.lobbyId.toString()
-            console.log("Joined Lobby ID:",lobbyId.value);
+            console.log('Joined Lobby ID:',lobbyId.value);
           }
         }).catch((error) => {
           console.error(error);
         }).then(() => {
-          console.log(">>>>>>>>>", lobbyId.value)
+          console.log('>>>>>>>>>', lobbyId.value)
           playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/`+playerId)
 
           update(playerLobbyRef, {
@@ -344,12 +344,12 @@ export default defineComponent({
             coins: 0,
           });
         }
-        )        
+        )
 
         //remove Player from Firebase, when disconnect
         onDisconnect(playerRef).remove();
         onDisconnect(playerLobbyRef).remove();
-        
+
       } else {
         // User is signed out
         // ...
@@ -470,7 +470,7 @@ export default defineComponent({
         { x: 10, y: 8 },
         { x: 8, y: 8 },
         { x: 11, y: 4 },
-      ]);      
+      ]);
       return temp as Coordinates
     }
 

@@ -3,20 +3,20 @@
     <q-btn class="new-game-btn" @click="openDialog = true">Create Game</q-btn>
     <div class="lobby-div">
       <div class="lobby-card" v-for="lobby in allLobbysArray" :key="lobby.lobbyId">
-        <lobby-card 
+        <lobby-card
         :playerId="lobby.playerId"
         :lobbyId="lobby.lobbyId"
         :lobbyName="lobby.lobbyName"
-        :gamemode="lobby.gamemode" 
+        :gamemode="lobby.gamemode"
         :isPrivate="lobby.isPrivate"
         @deleteLobby="deleteLobby"
         @joinGame="joinGame"
-        />    
+        />
       </div>
     </div>
     <q-dialog v-model="openDialog">
       <q-card>
-        <q-card-section class="row items-center">          
+        <q-card-section class="row items-center">
           <q-form class="q-gutter-md">
             <q-input
               filled
@@ -26,7 +26,7 @@
               :rules="[ val => val && val.length > 0 || 'Please type something']"
             />
             <q-select v-model="gamemode" :options="gamesList" label="Standard" />
-            <q-toggle v-model="closedLobby" label="Make it a private Lobby" />           
+            <q-toggle v-model="closedLobby" label="Make it a private Lobby" />
           </q-form>
         </q-card-section>
         <q-card-actions align="right">
@@ -40,17 +40,14 @@
 
 <script lang="ts">
 import { LobbyInterface } from 'src/components/LobbyInterface';
-import { defineComponent, ref, watch } from 'vue';
+import { defineComponent, ref } from 'vue';
 import LobbyCard from '../components/LobbyCard.vue'
 import {
-  child,
   DatabaseReference,
-  get,
   getDatabase,
   onChildAdded,
   onChildRemoved,
   onDisconnect,
-  onValue,
   ref as storageRef,
   remove,
 set,
@@ -66,7 +63,7 @@ export default defineComponent({
   setup() {
     const router = useRouter();
 
-    const openDialog = ref<boolean>(false)    
+    const openDialog = ref<boolean>(false)
     let tempId = 1;
 
     const db = getDatabase();
@@ -90,56 +87,56 @@ export default defineComponent({
         playerId: playerId.value,
         lobbyName: lobbyName.value,
         gamemode: gamemode.value,
-        isPrivate: closedLobby.value        
+        isPrivate: closedLobby.value
       });
       const allPlayers = storageRef(db, `lobbys/${playerId.value + tempId}/players/${playerId.value}`);
       set(allPlayers, {
-        id: playerId.value,          
+        id: playerId.value,
       });
 
       update(playerRef, {
-        lobbyId: playerId.value + tempId       
-      });   
-      
+        lobbyId: playerId.value + tempId
+      });
 
-      // router.replace({ name: 'CoinGame' });   
-      console.log("LOBBYID: ", playerId.value + tempId )
+
+      // router.replace({ name: 'CoinGame' });
+      console.log('LOBBYID: ', playerId.value + tempId )
       router.push({ name: 'CoinGame', params: { lobbyId: playerId.value + tempId  }})
-      
-      tempId ++    
-    }    
+
+      tempId ++
+    }
 
     onChildAdded(storageRef(db, 'lobbys/'), (snapshot) => {
-      const addedLobby = snapshot.val();      
+      const addedLobby = snapshot.val();
       allLobbysArray.value.push(new LobbyInterface(addedLobby.id,addedLobby.lobbyName,addedLobby.playerId,addedLobby.gamemode,addedLobby.isPrivate))
     })
 
     onChildRemoved(storageRef(db, 'lobbys/'), (snapshot) => {
-      const removedLobby = snapshot.val();  
+      const removedLobby = snapshot.val();
       allLobbysArray.value.forEach((element,idx) =>{
         if(element.lobbyId === removedLobby.id){
-          allLobbysArray.value.splice(idx,1)          
+          allLobbysArray.value.splice(idx,1)
         }
-      }) 
+      })
     })
 
-    const deleteLobby = (deleteId: string) => {       
+    const deleteLobby = (deleteId: string) => {
       allLobbysArray.value.forEach((element,idx) =>{
         if(element.lobbyId === deleteId){
-          allLobbysArray.value.splice(idx,1)          
+          allLobbysArray.value.splice(idx,1)
         }
-      })     
+      })
       remove(storageRef(db, `lobbys/${deleteId}`));
-    }     
+    }
 
     const joinGame = (lobbyId: string) => {
       const allPlayers = storageRef(db, `lobbys/${lobbyId}/players/${playerId.value}`);
       set(allPlayers, {
-        id: playerId.value,          
+        id: playerId.value,
       });
-      // router.replace({ name: 'CoinGame' });  
-      console.log("LOBBYID: ", lobbyId)
-      router.push({ name: 'CoinGame', params: { lobbyId: lobbyId }})   
+      // router.replace({ name: 'CoinGame' });
+      console.log('LOBBYID: ', lobbyId)
+      router.push({ name: 'CoinGame', params: { lobbyId: lobbyId }})
     }
 
     //*****firebase stuff*****
@@ -168,29 +165,29 @@ export default defineComponent({
         playerRef = storageRef(db, 'players/' + playerId.value);
         set(playerRef, {
           id: playerId.value,
-          name: name,          
+          name: name,
         });
 
-        //remove Player from Firebase, whem disconnect  
+        //remove Player from Firebase, whem disconnect
         onDisconnect(playerRef).remove().then(() => {
           allLobbysArray.value.forEach(lobby => {
-            if(lobby.playerId === playerId.value){       
+            if(lobby.playerId === playerId.value){
               const deleteId = lobby.lobbyId
               remove(storageRef(db, `lobbys/${deleteId}`));
             }
-          })          
-        })       
-        
+          })
+        })
+
       } else {
         // User is signed out
         // ...
       }
-    });     
+    });
     //********************
-   
+
     // "$uid": {
     //     	".delete": "auth != null && auth.uid == $uid",
-    //   	}, 
+    //   	},
 
     return {
       LobbyCard,

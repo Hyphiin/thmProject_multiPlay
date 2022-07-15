@@ -5,14 +5,18 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { 
+      {
         path: '',
         name: 'MainLobby',
         component: () => import('pages/MainLobby.vue') },
-      { 
+      {
         path: 'coin-game',
-        name: 'CoinGame', 
+        name: 'CoinGame',
         component: () => import('pages/CoinGame.vue') },
+      {
+        path: 'tictactoe-game',
+        name: 'TicTacToeGame',
+        component: () => import('pages/TicTacToeGame.vue') },
     ],
   },
 
