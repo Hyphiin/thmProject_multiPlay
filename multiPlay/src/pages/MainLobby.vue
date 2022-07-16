@@ -77,7 +77,7 @@ export default defineComponent({
 
     const lobbyName = ref<string>('')
     const gamemode = ref<string>('CoinGame')
-    const gamesList = ref<string[]>(['CoinGame', 'AnotherGame'])
+    const gamesList = ref<string[]>(['CoinGame', 'TicTacToe', 'AnotherGame'])
     const closedLobby = ref<boolean>(false)
 
     const createNewLobby = () => {
@@ -101,7 +101,7 @@ export default defineComponent({
 
       // router.replace({ name: 'CoinGame' });
       console.log('LOBBYID: ', playerId.value + tempId )
-      router.push({ name: 'CoinGame', params: { lobbyId: playerId.value + tempId  }})
+      router.push({ name: gamemode.value, params: { lobbyId: playerId.value + tempId  }})
 
       tempId ++
     }
@@ -136,7 +136,7 @@ export default defineComponent({
       });
       // router.replace({ name: 'CoinGame' });
       console.log('LOBBYID: ', lobbyId)
-      router.push({ name: 'CoinGame', params: { lobbyId: lobbyId }})
+      router.push({ name: gamemode.value, params: { lobbyId: lobbyId }})
     }
 
     //*****firebase stuff*****
