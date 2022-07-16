@@ -110,9 +110,11 @@ export default defineComponent({
     onChildAdded(storageRef(db, 'lobbys/'), (snapshot) => {
       const addedLobby = snapshot.val();
       let isFull = false;
-      if(addedLobby.players.length >= 2){
+
+      if (Object.keys(addedLobby.players).length >= 2){
         isFull = true
       }
+      console.log(isFull)
       allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.isPrivate, isFull))
     })
 
