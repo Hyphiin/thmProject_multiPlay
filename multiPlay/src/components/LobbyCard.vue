@@ -1,21 +1,21 @@
 <template>
-   <q-card class="my-card">
-      <q-card-section class="bg-primary text-white">
-        <div class="text-h6">{{lobbyName}}</div>
-        <div class="subtitles">
-          <div class="text-subtitle">GAME: {{gamemode}}</div>
-          <div class="text-subtitle">by {{playerId}}</div>
-          <div class="text-subtitle">Private: {{isPrivate}}</div>
-        </div>
-      </q-card-section>
+  <q-card class="my-card">
+    <q-card-section class="bg-primary text-white">
+      <div class="text-h6">{{lobbyName}}</div>
+      <div class="subtitles">
+        <div class="text-subtitle">GAME: {{gamemode}}</div>
+        <div class="text-subtitle">by {{playerId}}</div>
+        <div class="text-subtitle">Private: {{isPrivate}}</div>
+      </div>
+    </q-card-section>
 
-      <q-separator />
+    <q-separator />
 
-      <q-card-actions class="buttons">
-        <q-btn flat @click="$emit('joinGame', lobbyId)">Join Game</q-btn>
-        <q-btn flat icon="delete" @click="$emit('deleteLobby', lobbyId)"/>
-      </q-card-actions>
-    </q-card>
+    <q-card-actions class="buttons">
+      <q-btn flat :disable="isFull" @click="$emit('joinGame', lobbyId) ">Join Game</q-btn>
+      <q-btn flat icon="delete" @click="$emit('deleteLobby', lobbyId)" />
+    </q-card-actions>
+  </q-card>
 </template>
 
 <script>
@@ -48,6 +48,10 @@ export default defineComponent({
     isPrivate:{
       type: Boolean,
       required: true
+    },
+    isFull:{
+      type: Boolean,
+      default: false
     }
   },
   setup() {
@@ -65,11 +69,11 @@ export default defineComponent({
   .subtitles{
     display:flex;
     flex-direction: column;
-    justify-content: space-between;  
+    justify-content: space-between;
     .text-subtitle{
       margin-top: 3px;
     }
-  }  
+  }
 
   .buttons{
     display: flex;

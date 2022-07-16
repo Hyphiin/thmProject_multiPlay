@@ -9,6 +9,7 @@
         :lobbyName="lobby.lobbyName"
         :gamemode="lobby.gamemode"
         :isPrivate="lobby.isPrivate"
+        :isFull="lobby.isFull"
         @deleteLobby="deleteLobby"
         @joinGame="joinGame"
         />
@@ -76,7 +77,7 @@ export default defineComponent({
     const allLobbysArray = ref<LobbyInterface[]>([])
 
     const lobbyName = ref<string>('')
-    const gamemode = ref<string>('CoinGame')
+    const gamemode = ref<string>('')
     const gamesList = ref<string[]>(['CoinGame', 'TicTacToe', 'AnotherGame'])
     const closedLobby = ref<boolean>(false)
 
@@ -108,7 +109,11 @@ export default defineComponent({
 
     onChildAdded(storageRef(db, 'lobbys/'), (snapshot) => {
       const addedLobby = snapshot.val();
-      allLobbysArray.value.push(new LobbyInterface(addedLobby.id,addedLobby.lobbyName,addedLobby.playerId,addedLobby.gamemode,addedLobby.isPrivate))
+      let isFull = false;
+      if(addedLobby.players.length >= 2){
+        isFull = true
+      }
+      allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.isPrivate, isFull))
     })
 
     onChildRemoved(storageRef(db, 'lobbys/'), (snapshot) => {
@@ -135,7 +140,12 @@ export default defineComponent({
         id: playerId.value,
       });
       // router.replace({ name: 'CoinGame' });
-      console.log('LOBBYID: ', lobbyId)
+      console.log(allLobbysArray.value)
+      allLobbysArray.value.forEach(lobby => {
+        if(lobby.lobbyId === lobbyId){
+          gamemode.value = lobby.gamemode
+        }
+      })
       router.push({ name: gamemode.value, params: { lobbyId: lobbyId }})
     }
 
