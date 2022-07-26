@@ -1,9 +1,15 @@
 <template>
   <q-page class="row items-center justify-evenly">
+    <div class="player-info">
+      <div>
+        <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
+          standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+      </div>
+    </div>
     <main class="main-container">
       <h1 class="main-container_h1">Tic Tac Toe</h1>
 
-      <h3 class="main-container_h3">Player {{ player }}'s turn</h3>
+      <h3 class="main-container_h3">Player {{ currentPlayer }}'s turn</h3>
 
       <div class="main-container_board">
         <div v-for="(row, x) in board" :key="x" class="board_div">
@@ -26,14 +32,63 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue';
+import { defineComponent, onMounted, ref } from 'vue';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import {
+  getDatabase,
+  ref as storageRef,
+  set,
+  onDisconnect,
+  onValue,
+  onChildAdded,
+  DatabaseReference,
+  onChildRemoved,
+  update,
+  get,
+  child,
+} from 'firebase/database';
+import { useRoute } from 'vue-router';
+import { Players } from './CoinGame.vue';
+import { computed } from '@vue/reactivity';
+
+interface DatabaseEntry {
+  id: string;
+  name: string;
+  sign: string;
+  gamesWon: number;
+}
 
 export default defineComponent({
   name: 'TicTacToeGame',
   components: {},
   setup() {
+    const db = getDatabase();
+    const route = useRoute()
 
-    const player = ref('X' )
+    let playerId: string;
+    let lobbyId = ref<string>('');
+    let playerRef: DatabaseReference;
+    let boardRef: DatabaseReference;
+    let playerLobbyRef: DatabaseReference;
+    let players: Players = {};
+
+    //updates Player Name
+    const playerNameInput = ref<string>();
+    const changeName = (newValue: string | number | null) => {
+      if (typeof newValue === 'string') {
+        playerNameInput.value = newValue
+        update(playerLobbyRef, {
+          name: newValue,
+        });
+      }
+    };
+
+    onMounted(() => {
+      initGame();
+    })
+
+    const currentPlayer = ref('X')
+    let currentPlayerRef: DatabaseReference;
     const board = ref([
        ['','',''],
        ['','',''],
@@ -59,13 +114,29 @@ export default defineComponent({
     })
 
     const MakeMove = (x: number, y: number) => {
-      if (winner.value) return
+      console.log(playerRef)
+      console.log(playerId)
+      get(child(playerLobbyRef, 'sign')).then((snapshot) => {
+        if (snapshot.exists()) {
+          if (snapshot.val() === currentPlayer.value) {
+            console.log('MAKEMOVE:', playerRef)
+            if (winner.value) return
 
-      if(board.value[x][y] !== '') return
+            if (board.value[x][y] !== '') return
 
-      board.value[x][y] = player.value
+            board.value[x][y] = currentPlayer.value
 
-      player.value = player.value === 'X' ? 'O' : 'X'
+            currentPlayer.value = currentPlayer.value === 'X' ? 'O' : 'X'
+
+            update(boardRef, {
+              board: board.value
+            });
+            update(currentPlayerRef, {
+              currentPlayer: currentPlayer.value
+            });
+          }
+        }})
+
     }
 
     const ResetGame = () => {
@@ -74,10 +145,180 @@ export default defineComponent({
         ['','',''],
         ['','','']
       ]
-      player.value = 'X'
+      currentPlayer.value = 'X'
     }
 
-    return { player, board, winner, MakeMove , ResetGame};
+    const initGame = () => {
+      if (route.params.lobbyId) {
+        lobbyId.value = route.params.lobbyId.toString()
+
+        const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`)
+        boardRef = storageRef(db, `lobbys/${lobbyId.value}/board/`);
+        currentPlayerRef = storageRef(db, `lobbys/${lobbyId.value}/currentPlayer/`);
+
+        //fires when change occurs
+        onValue(allPlayersRef, (snapshot) => {
+          players = snapshot.val() || {}
+          Object.keys(players).forEach((key) => {
+            const characterState = players[key] as unknown as DatabaseEntry
+            console.log('characterState', characterState)
+          })
+        })
+        onValue(boardRef, (snapshot) => {
+          console.log('onValue - boardRef', snapshot.val())
+          if (snapshot.val() != null){
+            board.value = snapshot.val().board
+          }
+        })
+        onValue(currentPlayerRef, (snapshot) => {
+          console.log('onValue - currentPlayerRef',snapshot.val())
+          if (snapshot.val() != null) {
+            currentPlayer.value = snapshot.val().currentPlayer
+          }
+        })
+        //fires when a new node is added to the db
+        onChildAdded(allPlayersRef, (snapshot) => {
+          const addedPlayer = snapshot.val()
+          console.log('addedPlayer',addedPlayer)
+        })
+        //remove character DOM Element when they leave
+        onChildRemoved(allPlayersRef, (snapshot) => {
+          const removedKey = snapshot.val().id;
+          console.log('removedKey', removedKey)
+        });
+
+        set(boardRef, {
+          board: board.value
+        });
+        set(currentPlayerRef, {
+          currentPlayer: currentPlayer.value
+        });
+      }
+    }
+
+    //*****firebase stuff*****
+    const auth = getAuth();
+    signInAnonymously(auth)
+      .then(() => {
+        // Signed in..
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(
+          'So sorry, something went wrong! errorCode: ' +
+          errorCode +
+          ' | errorMessage: ' +
+          errorMessage
+        );
+      });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in, see docs for a list of available properties
+        // https://firebase.google.com/docs/reference/js/firebase.User
+        playerId = user.uid;
+
+        const name = createName();
+        playerNameInput.value = name;
+
+        playerRef = storageRef(db, 'players' + playerId);
+        get(child(playerRef, 'lobbyId')).then((snapshot) => {
+          if (snapshot.exists()) {
+            lobbyId.value = snapshot.val();
+          } else {
+            lobbyId.value = route.params.lobbyId.toString()
+            console.log('Joined Lobby ID:', lobbyId.value);
+          }
+        }).catch((error) => {
+          console.error(error);
+        }).then(() => {
+          console.log('>>>>>>>>>', lobbyId.value)
+          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/` + playerId)
+          if (Object.keys(players).length === 1) {
+            update(playerLobbyRef, {
+              id: playerId,
+              name: playerNameInput.value,
+              sign: 'X',
+              gamesWon: 0
+            });
+          } else {
+            update(playerLobbyRef, {
+              id: playerId,
+              name: playerNameInput.value,
+              sign: 'O',
+              gamesWon: 0
+            });
+          }
+
+        }
+        )
+
+        //remove Player from Firebase, when disconnect
+        onDisconnect(playerRef).remove();
+        onDisconnect(playerLobbyRef).remove();
+
+      } else {
+        // User is signed out
+        // ...
+      }
+    });
+
+    //*****helper Functions*****
+    const randomFromArray = (array: string[] | number[]): string | number => {
+      return array[Math.floor(Math.random() * array.length)];
+    };
+    //create a randome start name
+    const createName = () => {
+      const prefix = randomFromArray([
+        'COOL',
+        'SUPER',
+        'HIP',
+        'SMUG',
+        'COOL',
+        'SILKY',
+        'GOOD',
+        'SAFE',
+        'DEAR',
+        'DAMP',
+        'WARM',
+        'RICH',
+        'LONG',
+        'DARK',
+        'SOFT',
+        'BUFF',
+        'DOPE',
+      ]);
+      const animal = randomFromArray([
+        'BEAR',
+        'DOG',
+        'CAT',
+        'FOX',
+        'LAMB',
+        'LION',
+        'BOAR',
+        'GOAT',
+        'VOLE',
+        'SEAL',
+        'PUMA',
+        'MULE',
+        'BULL',
+        'BIRD',
+        'BUG',
+      ]);
+      return `${prefix} ${animal}`;
+    };
+
+    return {
+    currentPlayer,
+    board,
+    winner,
+    playerNameInput,
+    MakeMove ,
+    ResetGame,
+    changeName,
+      createName
+    };
   },
 });
 </script>
@@ -142,5 +383,33 @@ export default defineComponent({
     'wght' 400,
     'GRAD' 0,
     'opsz' 48
+}
+.player-info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 1em;
+  display: flex;
+  gap: 0.5em;
+  align-items: flex-end;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+}
+
+input[type='text'],
+
+input[type='text'] {
+  outline: 0;
+  padding-left: 0.5em;
+  border: 3px solid #222034;
+  width: 150px;
+  text-transform: uppercase;
+}
+
+input[type='text']:focus {
+  border-color: #f000ff;
 }
 </style>

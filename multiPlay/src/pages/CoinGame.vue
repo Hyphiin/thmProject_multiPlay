@@ -44,10 +44,10 @@ child,
 import { KeyPressListener } from '../components/KeyPressListener';
 import { useRoute } from 'vue-router';
 
-interface Players {
+export interface Players {
   [key: string]: DatabaseEntry;
 }
-interface PlayerElements {
+export interface PlayerElements {
   [key: string]: HTMLDivElement;
 }
 interface Coins {
