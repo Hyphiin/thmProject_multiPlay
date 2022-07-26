@@ -78,7 +78,7 @@ export default defineComponent({
 
     const lobbyName = ref<string>('')
     const gamemode = ref<string>('')
-    const gamesList = ref<string[]>(['CoinGame', 'TicTacToe', 'AnotherGame'])
+    const gamesList = ref<string[]>(['CoinGame', 'TicTacToe', 'ConnectFour', 'AnotherGame'])
     const closedLobby = ref<boolean>(false)
 
     const createNewLobby = () => {

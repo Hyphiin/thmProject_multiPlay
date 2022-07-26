@@ -17,6 +17,10 @@ const routes: RouteRecordRaw[] = [
         path: 'tictactoe-game',
         name: 'TicTacToe',
         component: () => import('pages/TicTacToeGame.vue') },
+        {
+          path: 'connectfour-game',
+          name: 'ConnectFour',
+          component: () => import('pages/ConnectFourGame.vue') },
     ],
   },
 
