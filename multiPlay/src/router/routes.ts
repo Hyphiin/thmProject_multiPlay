@@ -8,19 +8,28 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'MainLobby',
-        component: () => import('pages/MainLobby.vue') },
+        component: () => import('pages/MainLobby.vue')
+      },
       {
         path: 'coin-game',
         name: 'CoinGame',
-        component: () => import('pages/CoinGame.vue') },
+        component: () => import('pages/CoinGame.vue')
+      },
       {
         path: 'tictactoe-game',
         name: 'TicTacToe',
-        component: () => import('pages/TicTacToeGame.vue') },
-        {
-          path: 'connectfour-game',
-          name: 'ConnectFour',
-          component: () => import('pages/ConnectFourGame.vue') },
+        component: () => import('pages/TicTacToeGame.vue')
+      },
+      {
+        path: 'connectfour-game',
+        name: 'ConnectFour',
+        component: () => import('pages/ConnectFourGame.vue')
+      },
+      {
+        path: 'breakthrough-game',
+        name: 'Breakthrough',
+        component: () => import('pages/BreakthroughGame.vue')
+      },
     ],
   },
 
