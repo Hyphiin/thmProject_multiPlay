@@ -99,27 +99,147 @@ export default defineComponent({
       ['', '', '', '', '', '', '', ''],
     ]);
 
-    const CalculateWinner = (board: Array<string>) => {
-      const winningLines = [[0, 1, 2],[3, 4, 5],[6, 7, 8],[0, 3, 6],[1, 4, 7],[2, 5, 8],[0, 4, 8],[2, 4, 6]]
-      for (let i = 0; i < winningLines.length; i++) {
-        const [a, b, c] = winningLines[i]
+    const CalculateWinner = (board: Array<Array<string>>) => {
+      // const winningLines = [[0, 1, 2],[3, 4, 5],[6, 7, 8],[0, 3, 6],[1, 4, 7],[2, 5, 8],[0, 4, 8],[2, 4, 6]]
+      // for (let i = 0; i < winningLines.length; i++) {
+      //   const [a, b, c] = winningLines[i]
 
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-          return board[a]
+      //   if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+      //     return board[a]
+      //   }
+      // }
+      var winner = ''
+
+      var xSign = 0
+      var oSign = 0
+      console.log("BOARD", board.length)
+
+      // board.forEach(row => {
+      //   console.log(row)
+      //   row.forEach(column => {
+      //     console.log(column)
+      //   })
+      // })
+
+      //check vertical
+      for (let x = 0; x <= 5; x++) {
+        for (let y = 0; y <= 7; y++) {
+          if (board[x][y] === 'O') {
+            xSign = 0
+            oSign += 1
+          } else if (board[x][y] === '') {
+            xSign = 0
+            oSign = 0
+          } else if (board[x][y] === 'X') {
+            oSign = 0
+            xSign += 1
+          }
+
+          if (oSign === 4) {
+            break;
+          } else if (xSign === 4) {
+            break;
+          }
+        }
+        if (oSign === 4) {
+          winner = 'O'
+          console.log('O GEWINNT VERTIKAL!')
+          return winner
+        } else if (xSign == 4) {
+          winner = 'X'
+          console.log('X GEWINNT VERTIKAL!')
+          return winner
+        }
+        oSign = 0
+        xSign = 0
+      }
+      oSign = 0
+      xSign = 0
+
+      //check horizontal
+      for (let y = 0; y <= 7; y++) {
+        for (let x = 0; x <= 5; x++) {
+          if (board[x][y] === 'O') {
+            xSign = 0
+            oSign += 1
+          } else if (board[x][y] === '') {
+            xSign = 0
+            oSign = 0
+          } else if (board[x][y] === 'X') {
+            oSign = 0
+            xSign += 1
+          }
+
+          if (oSign === 4) {
+            break;
+          } else if (xSign === 4) {
+            break;
+          }
+        }
+        if (oSign === 4) {
+          winner = 'O'
+          console.log('O GEWINNT VERTIKAL!')
+          return winner
+        } else if (xSign == 4) {
+          winner = 'X'
+          console.log('X GEWINNT VERTIKAL!')
+          return winner
+        }
+        oSign = 0
+        xSign = 0
+      }
+
+      //check diagonal
+      for (let x = 0; x <= 5; x++) {
+        for (let y = 0; y <= 7; y++) {
+          if (checkDiagonal(board,x,y,'O') === true) {
+            winner = 'O'
+            console.log('O GEWINNT DIAGONAL!')
+            return winner
+          } else if (checkDiagonal(board, x, y, 'X') === true) {
+            winner = 'X'
+            console.log('X GEWINNT DIAGONAL!')
+            return winner
+          }
         }
       }
+
       return null
     }
 
-    const winner = computed(() => {
-      let tempArray = board.value.reduce((acc, val) => acc.concat(val), []);
+    const checkDiagonal = (board: Array<Array<string>>, x: number, y: number, playerSign: string) => {
+      if ((x + 3) <= 5 && (y + 3) <= 7 ){
+        if (board[x][y] === playerSign) {
+          if (board[x+1][y+1] === playerSign) {
+            if (board[x+2][y+2] === playerSign) {
+              if (board[x+3][y+3] === playerSign) {
+                return true
+              }
+            }
+          }
+        }
+      }
+      if ((x - 3) <= 5 && (y - 3) <= 7) {
+        if (board[x][y] === playerSign) {
+          if (board[x - 1][y + 1] === playerSign) {
+            if (board[x - 2][y + 2] === playerSign) {
+              if (board[x - 3][y + 3] === playerSign) {
+                return true
+              }
+            }
+          }
+        }
+      }
+      return false
+    }
 
-      return CalculateWinner(tempArray)
+    const winner = computed(() => {
+      return CalculateWinner(board.value)
     })
 
    const MakeMove = (x: number, y: number) => {
-      console.log(playerRef)
-      console.log(playerId)
+      // console.log(playerRef)
+      // console.log(playerId)
       get(child(playerLobbyRef, 'sign')).then((snapshot) => {
         if (snapshot.exists()) {
           if (snapshot.val() === currentPlayer.value) {
@@ -207,6 +327,9 @@ export default defineComponent({
         });
       }
     }
+
+
+
 
 
     //*****firebase stuff*****
