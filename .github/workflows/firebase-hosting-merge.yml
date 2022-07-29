@@ -18,9 +18,10 @@ jobs:
         node-version: 12.22.x
     - name: install
       run: cd multiPlay && npm ci && npm install -g @quasar/cli && quasar build
-    - name: install
+    - name: firebase
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:
+        entrypoint: ./multiPlay
         repoToken: '${{ secrets.GITHUB_TOKEN }}'
         firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MULTIPLAY_62301 }}'
         channelId: live
