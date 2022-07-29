@@ -1,38 +1,29 @@
 <template>
   <q-page class="items-center justify-evenly">
-    <q-btn class="new-game-btn" @click="openDialog = true">Create Game</q-btn>
-    <div class="lobby-div">
-      <div class="lobby-card" v-for="lobby in allLobbysArray" :key="lobby.lobbyId">
-        <lobby-card
-        :playerId="lobby.playerId"
-        :lobbyId="lobby.lobbyId"
-        :lobbyName="lobby.lobbyName"
-        :gamemode="lobby.gamemode"
-        :isPrivate="lobby.isPrivate"
-        :isFull="lobby.isFull"
-        @deleteLobby="deleteLobby"
-        @joinGame="joinGame"
-        />
+    <div class="lobby-container">
+      <div class="lobby-div">
+        <div class="lobby-card" v-for="lobby in allLobbysArray" :key="lobby.lobbyId">
+          <lobby-card :playerId="lobby.playerId" :lobbyId="lobby.lobbyId" :lobbyName="lobby.lobbyName"
+            :gamemode="lobby.gamemode" :isPrivate="lobby.isPrivate" :isFull="lobby.isFull" @deleteLobby="deleteLobby"
+            @joinGame="joinGame" />
+        </div>
+        <add-game-card @createGame="openDialog = true" />
       </div>
     </div>
+
     <q-dialog v-model="openDialog">
       <q-card>
         <q-card-section class="row items-center">
           <q-form class="q-gutter-md">
-            <q-input
-              filled
-              v-model="lobbyName"
-              label="Name of the Lobby"
-              lazy-rules
-              :rules="[ val => val && val.length > 0 || 'Please type something']"
-            />
-            <q-select v-model="gamemode" :options="gamesList" label="Standard" />
-            <q-toggle v-model="closedLobby" label="Make it a private Lobby" />
+            <q-input filled v-model="lobbyName" label="Name of the Lobby" lazy-rules
+              :rules="[ val => val && val.length > 0 || 'Please type something']" />
+            <q-select v-model="gamemode" :options="gamesList" label="Gamemode" />
+            <q-toggle v-model="closedLobby" color="secondary" label="Make it a private Lobby" />
           </q-form>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn flat label="Create Game" color="primary" v-close-popup @click="createNewLobby"/>
+          <q-btn outline label="Cancel" color="primary" v-close-popup />
+          <q-btn label="Create Game" color="primary" v-close-popup @click="createNewLobby" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -43,6 +34,7 @@
 import { LobbyInterface } from 'src/components/LobbyInterface';
 import { defineComponent, ref } from 'vue';
 import LobbyCard from '../components/LobbyCard.vue'
+import AddGameCard from '../components/addGameCard.vue'
 import {
   DatabaseReference,
   getDatabase,
@@ -60,7 +52,7 @@ import { useRouter } from 'vue-router';
 
 export default defineComponent({
   name: 'MainLobby',
-  components: { LobbyCard },
+  components: { LobbyCard, AddGameCard },
   setup() {
     const router = useRouter();
 
@@ -77,8 +69,8 @@ export default defineComponent({
     const allLobbysArray = ref<LobbyInterface[]>([])
 
     const lobbyName = ref<string>('')
-    const gamemode = ref<string>('')
-    const gamesList = ref<string[]>(['CoinGame', 'TicTacToe', 'ConnectFour', 'Breakthrough','AnotherGame'])
+    const gamemode = ref<string>('TicTacToe')
+    const gamesList = ref<string[]>(['TicTacToe', 'ConnectFour', 'CoinGame', 'Breakthrough'])
     const closedLobby = ref<boolean>(false)
 
     const createNewLobby = () => {
@@ -111,7 +103,7 @@ export default defineComponent({
       const addedLobby = snapshot.val();
       let isFull = false;
 
-      if (Object.keys(addedLobby.players).length >= 2){
+      if (Object.keys(addedLobby.players).length >= 2 && addedLobby.gamemode !== "CoinGame"){
         isFull = true
       }
       console.log(isFull)
@@ -130,10 +122,12 @@ export default defineComponent({
     const deleteLobby = (deleteId: string) => {
       allLobbysArray.value.forEach((element,idx) =>{
         if(element.lobbyId === deleteId){
-          allLobbysArray.value.splice(idx,1)
+          if(element.playerId === playerId.value) {
+            allLobbysArray.value.splice(idx,1)
+            remove(storageRef(db, `lobbys/${deleteId}`));
+          }
         }
       })
-      remove(storageRef(db, `lobbys/${deleteId}`));
     }
 
     const joinGame = (lobbyId: string) => {
@@ -220,15 +214,63 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-
-.new-game-btn{
-  background-color: rgb(241, 157, 0);
-  color: white;
+.lobby-container{
+  display: flex;
+  flex-direction: column;
 }
 .lobby-div{
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+///later
+.player-info {
+  padding: 1em;
+  display: flex;
+  gap: 0.5em;
+  align-items: flex-end;
+  margin-top: 20px;
+
+  button {
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 14px;
+    height: 44px;
+    border-radius: 4px;
+    outline: 0;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    border: 0;
+    cursor: pointer;
+    color: white;
+    border: 1px solid rgb(241, 157, 0);
+    background-color: #f2c268;
+  }
+
+  button:active {
+    position: relative;
+    top: 1px;
+  }
+}
+
+label {
+  display: block;
+  font-weight: bold;
+}
+
+input[type='text'],
+input[type='text'] {
+  outline: 0;
+  padding-left: 0.5em;
+  border: 3px solid #222034;
+  width: 150px;
+  text-transform: uppercase;
+}
+
+input[type='text']:focus {
+  border-color: #f2c268;
 }
 </style>
 

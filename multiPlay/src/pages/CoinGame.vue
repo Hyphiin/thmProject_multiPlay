@@ -3,22 +3,11 @@
     <div ref="gameContainer" class="game-container"></div>
     <div class="player-info">
       <div>
-        <q-input
-          outlined
-          :model-value="playerNameInput"
-          label="Dein Name"
-          bg-color="white"
-          standout="bg-light-green-11 text-black"
-          @update:model-value="(value) => changeName(value)"
-        />
+        <q-input outlined :model-value="playerNameInput" label="Your Name" bg-color="white"
+          standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
       </div>
       <div>
-        <q-btn
-          color="light-green-13"
-          text-color="black"
-          label="Farbe wechseln"
-          @click="changeColor"
-        />
+        <q-btn label="Change Color" @click="changeColor" />
       </div>
     </div>
   </q-page>
@@ -508,7 +497,7 @@ input[type='text'],
 button {
   font-family: inherit;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 14px;
   height: 44px;
   border-radius: 4px;
   outline: 0;
@@ -528,10 +517,11 @@ input[type='text']:focus {
 button {
   padding-left: 0.5em;
   padding-right: 0.5em;
-  background: #59ff5a;
   border: 0;
-  border-bottom: 2px solid #1e830b;
   cursor: pointer;
+  color: white;
+  border: 1px solid rgb(241, 157, 0);
+  background-color: #f2c268;
 }
 button:active {
   position: relative;

@@ -6,7 +6,7 @@
           standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
       </div>
       <div>
-        <q-btn color="light-green-13" text-color="black" label="Farbe wechseln" @click="changeColor" />
+        <q-btn label="Change Color" @click="changeColor" />
       </div>
     </div>
     <main class="main-container">
@@ -27,7 +27,7 @@
 
       <div class="main-container_bottom">
         <h2 v-if="winner" class="bottom_h2">Player '{{ winner }}' wins!</h2>
-        <q-btn class="bottom_resetBtn" @click="ResetGame">Reset</q-btn>
+        <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame">Reset</q-btn>
       </div>
     </main>
   </q-page>
@@ -492,11 +492,13 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped scss>
+
 .main-container {
   padding-top: 8px;
   text-align: center;
   color: white;
   min-height: 100vh;
+  padding-top: 150px;
   .main-container_h1 {
     margin-bottom: 8px;
     font-size: 30px;
@@ -538,8 +540,8 @@ export default defineComponent({
       line-height: 1;
     }
     .bottom_resetBtn {
-      background-color: rgb(241, 157, 0);
-      color: white;
+      margin-top:20px;
+      font-weight: bold;
     }
   }
 }
@@ -556,6 +558,28 @@ export default defineComponent({
   display: flex;
   gap: 0.5em;
   align-items: flex-end;
+  margin-top: 20px;
+
+  button {
+      font-family: inherit;
+      font-weight: bold;
+      font-size: 14px;
+      height: 44px;
+      border-radius: 4px;
+      outline: 0;
+      padding-left: 0.5em;
+      padding-right: 0.5em;
+      border: 0;
+      cursor: pointer;
+      color: white;
+      border: 1px solid rgb(241, 157, 0);
+      background-color: #f2c268;
+    }
+
+    button:active {
+      position: relative;
+      top: 1px;
+    }
 }
 
 label {
