@@ -15,7 +15,7 @@ jobs:
     - name: Set up Node (10)
       uses: actions/setup-node@v1
       with:
-        node-version: 10.x
+        node-version: 12.22.x
     - name: install
       run: cd multiPlay && npm ci && npm install -g @quasar/cli && quasar build
     - name: install
