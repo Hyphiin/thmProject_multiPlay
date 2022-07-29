@@ -173,7 +173,6 @@ export default defineComponent({
     });
 
     const MakeMove = (x: number, y: number) => {
-      console.log("PLAYERID",playerId.value);
       get(child(playerLobbyRef, 'sign')).then((snapshot) => {
         if (snapshot.exists()) {
           if (snapshot.val() === currentSign.value) {
