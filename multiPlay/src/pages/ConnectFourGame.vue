@@ -19,22 +19,10 @@
 
       <div class="main-container_board">
         <div v-for="(row, x) in board" :key="x" class="board_div">
-          <div
-            v-for="(cell, y) in row"
-            :key="y"
-            @click="MakeMove(x, y)"
-            class="div_cell"
-            :style="cell === 'X' ? 'color:green' : 'color:red'"
-          >
-            <span
-              class="material-symbols-outlined"
-              :style="
-                cell === 'X'
-                  ? 'color:rgb(241, 157, 0);'
-                  : 'color:rgb(73, 0, 141);'
-              "
-            >
-              {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : '' }}
+          <div v-for="(cell, y) in row" :key="y" @click="MakeMove(x, y)" class="div_cell">
+            <span class="material-symbols-outlined"
+              :style="cell === 'X' ? 'color:rgb(241, 157, 0);' : 'color:rgb(73, 0, 141);'">
+              {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
             </span>
           </div>
         </div>
@@ -356,6 +344,7 @@ export default defineComponent({
         });
       }
     };
+
 
     //*****firebase stuff*****
     const auth = getAuth();
