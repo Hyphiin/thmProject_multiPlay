@@ -10,14 +10,16 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout
+      uses: actions/checkout@v2
     - name: Set up Node (10)
       uses: actions/setup-node@v1
       with:
         node-version: 10.x
     - name: install
-    - uses: actions/checkout@v2
-    - run: cd multiPlay && npm ci && npm install -g @quasar/cli && quasar build
-    - uses: FirebaseExtended/action-hosting-deploy@v0
+      run: cd multiPlay && npm ci && npm install -g @quasar/cli && quasar build
+    - name: install
+      uses: FirebaseExtended/action-hosting-deploy@v0
       with:
         repoToken: '${{ secrets.GITHUB_TOKEN }}'
         firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MULTIPLAY_62301 }}'
