@@ -2,34 +2,27 @@
   <q-page class="row items-center justify-evenly">
     <div class="player-info">
       <div>
-        <q-input
-          outlined
-          :model-value="playerNameInput"
-          label="Dein Name"
-          bg-color="white"
-          standout="bg-light-green-11 text-black"
-          @update:model-value="(value) => changeName(value)"
-        />
+        <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
+          standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
       </div>
       <div>
-        <q-btn
-          color="light-green-13"
-          text-color="black"
-          label="Farbe wechseln"
-          @click="changeColor"
-        />
+        <q-btn color="light-green-13" text-color="black" label="Farbe wechseln" @click="changeColor" />
       </div>
     </div>
     <main class="main-container">
       <h1 class="main-container_h1">Tic Tac Toe</h1>
 
-      <h3 class="main-container_h3">Player {{ currentPlayer }}'s turn</h3>
+      <h3 class="main-container_h3">Player {{ currentPlayer.name }}'s turn</h3>
 
       <div class="main-container_board">
         <div v-for="(row, x) in board" :key="x" class="board_div">
           <div v-for="(cell, y) in row" :key="y" @click="MakeMove(x, y)" class="div_cell">
-            <span class="material-symbols-outlined"
-              :style="cell === 'X' ? 'color:rgb(241, 157, 0);' : 'color:rgb(73, 0, 141);'">
+            <span v-if="cell === currentPlayer.sign" class="material-symbols-outlined"
+              :style="cell === currentPlayer.sign ? ('color:' + currentPlayer.color) : ('color:' + currentOpponent.color)">
+              {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
+            </span>
+            <span v-else class="material-symbols-outlined"
+              :style="cell === currentOpponent.sign ? ('color:' + currentOpponent.color) : ('color:' + currentPlayer.color)">
               {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
             </span>
           </div>
@@ -37,10 +30,18 @@
       </div>
 
       <div class="main-container_bottom">
-        <h2 v-if="winner" class="bottom_h2">Player '{{ winner }}' wins!</h2>
+        <h2 v-if="winner" class="bottom_h2">
+          Player '{{ winner === currentPlayer.sign? currentPlayer.name : currentOpponent.name }}' wins!
+        </h2>
         <q-btn class="bottom_resetBtn" @click="ResetGame">Reset</q-btn>
       </div>
+      <div class="score">
+        <p>SCORES:</p>
+        <p>{{currentPlayer.name}}: {{currentPlayer.gamesWon}}</p>
+        <p>{{currentOpponent.name}}: {{currentOpponent.gamesWon}}</p>
+      </div>
     </main>
+
   </q-page>
 </template>
 
@@ -69,6 +70,7 @@ interface DatabaseEntry {
   name: string;
   sign: string;
   gamesWon: number;
+  color: string
 }
 
 export default defineComponent({
@@ -97,9 +99,11 @@ export default defineComponent({
     };
 
     //updates Player Color
+    const playerCurrentColor = ref<string>('orange');
     const changeColor = () => {
-      const mySkinIndex = playerColors.indexOf(players[playerId].color);
-      const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
+      const myColorIndex = playerColors.indexOf(players[playerId].color);
+      const nextColor = playerColors[myColorIndex + 1] || playerColors[0];
+      playerCurrentColor.value = nextColor
       update(playerLobbyRef, {
         color: nextColor,
       });
@@ -109,7 +113,22 @@ export default defineComponent({
       initGame();
     });
 
-    const currentPlayer = ref('X');
+    const currentPlayer = ref<DatabaseEntry>({
+      id: '',
+      name: '',
+      sign: 'X',
+      gamesWon: 0,
+      color: 'orange'
+    });
+
+    const currentOpponent = ref<DatabaseEntry>({
+      id: '',
+      name: '',
+      sign: 'O',
+      gamesWon: 0,
+      color: 'purple'
+    });
+
     let currentPlayerRef: DatabaseReference;
     const board = ref([
       ['', '', ''],
@@ -140,8 +159,13 @@ export default defineComponent({
 
     const winner = computed(() => {
       let tempArray = board.value.reduce((acc, val) => acc.concat(val), []);
-
-      return CalculateWinner(tempArray);
+      let tempWinner = CalculateWinner(tempArray)
+      if(tempWinner !== null){
+        update(playerLobbyRef, {
+          gamesWon: currentPlayer.value.gamesWon + 1,
+        });
+      }
+      return tempWinner;
     });
 
     const MakeMove = (x: number, y: number) => {
@@ -149,21 +173,21 @@ export default defineComponent({
       console.log(playerId);
       get(child(playerLobbyRef, 'sign')).then((snapshot) => {
         if (snapshot.exists()) {
-          if (snapshot.val() === currentPlayer.value) {
+          if (snapshot.val() === currentPlayer.value.sign) {
             console.log('MAKEMOVE:', playerRef);
             if (winner.value) return;
 
             if (board.value[x][y] !== '') return;
 
-            board.value[x][y] = currentPlayer.value;
+            board.value[x][y] = currentPlayer.value.sign;
 
-            currentPlayer.value = currentPlayer.value === 'X' ? 'O' : 'X';
+            currentPlayer.value.sign = currentPlayer.value.sign === 'X' ? 'O' : 'X';
 
             update(boardRef, {
               board: board.value,
             });
             update(currentPlayerRef, {
-              currentPlayer: currentPlayer.value,
+              currentPlayer: currentPlayer.value.sign,
             });
           }
         }
@@ -176,12 +200,12 @@ export default defineComponent({
         ['', '', ''],
         ['', '', ''],
       ];
-      currentPlayer.value = 'X';
+      currentPlayer.value.sign = 'X';
       set(boardRef, {
         board: board.value,
       });
       set(currentPlayerRef, {
-        currentPlayer: currentPlayer.value,
+        currentPlayer: currentPlayer.value.sign,
       });
     };
 
@@ -202,6 +226,11 @@ export default defineComponent({
           Object.keys(players).forEach((key) => {
             const characterState = players[key] as unknown as DatabaseEntry;
             console.log('characterState', characterState);
+            if(characterState.sign === currentPlayer.value.sign){
+              currentPlayer.value = characterState
+            } else {
+              currentOpponent.value = characterState
+            }
           });
         });
         onValue(boardRef, (snapshot) => {
@@ -213,13 +242,18 @@ export default defineComponent({
         onValue(currentPlayerRef, (snapshot) => {
           console.log('onValue - currentPlayerRef', snapshot.val());
           if (snapshot.val() != null) {
-            currentPlayer.value = snapshot.val().currentPlayer;
+            currentPlayer.value.sign = snapshot.val().currentPlayer;
           }
         });
         //fires when a new node is added to the db
         onChildAdded(allPlayersRef, (snapshot) => {
-          const addedPlayer = snapshot.val();
+          const addedPlayer = snapshot.val() as DatabaseEntry;
           console.log('addedPlayer', addedPlayer);
+          // if (addedPlayer.sign === currentPlayer.value.sign) {
+          //   currentPlayer.value = addedPlayer
+          // } else {
+          //   currentOpponent.value = addedPlayer
+          // }
         });
         //remove character DOM Element when they leave
         onChildRemoved(allPlayersRef, (snapshot) => {
@@ -231,7 +265,7 @@ export default defineComponent({
           board: board.value,
         });
         set(currentPlayerRef, {
-          currentPlayer: currentPlayer.value,
+          currentPlayer: currentPlayer.value.sign,
         });
       }
     };
@@ -287,7 +321,7 @@ export default defineComponent({
                 name: playerNameInput.value,
                 sign: 'X',
                 gamesWon: 0,
-                color: randomFromArray(playerColors),
+                color: 'orange',
               });
             } else {
               update(playerLobbyRef, {
@@ -295,7 +329,7 @@ export default defineComponent({
                 name: playerNameInput.value,
                 sign: 'O',
                 gamesWon: 0,
-                color: randomFromArray(playerColors),
+                color: 'orange'
               });
             }
           });
@@ -359,6 +393,7 @@ export default defineComponent({
 
     return {
       currentPlayer,
+      currentOpponent,
       board,
       winner,
       playerNameInput,
@@ -366,6 +401,7 @@ export default defineComponent({
       ResetGame,
       changeName,
       changeColor,
+      playerCurrentColor
     };
   },
 });

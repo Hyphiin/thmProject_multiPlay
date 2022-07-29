@@ -2,14 +2,11 @@
   <q-page class="row items-center justify-evenly">
     <div class="player-info">
       <div>
-        <q-input
-          outlined
-          :model-value="playerNameInput"
-          label="Dein Name"
-          bg-color="white"
-          standout="bg-light-green-11 text-black"
-          @update:model-value="(value) => changeName(value)"
-        />
+        <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
+          standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+      </div>
+      <div>
+        <q-btn color="light-green-13" text-color="black" label="Farbe wechseln" @click="changeColor" />
       </div>
     </div>
     <main class="main-container">
@@ -21,7 +18,7 @@
         <div v-for="(row, x) in board" :key="x" class="board_div">
           <div v-for="(cell, y) in row" :key="y" @click="MakeMove(x, y)" class="div_cell">
             <span class="material-symbols-outlined"
-              :style="cell === 'X' ? 'color:rgb(241, 157, 0);' : 'color:rgb(73, 0, 141);'">
+              :style="cell === 'X' ? ('color:'+playerCurrentColor) : 'color:rgb(73, 0, 141);'">
               {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
             </span>
           </div>
@@ -89,6 +86,17 @@ export default defineComponent({
           name: newValue,
         });
       }
+    };
+
+    //updates Player Color
+    const playerCurrentColor = ref<string>('orange');
+    const changeColor = () => {
+      const myColorIndex = playerColors.indexOf(players[playerId].color);
+      const nextColor = playerColors[myColorIndex + 1] || playerColors[0];
+      playerCurrentColor.value = nextColor
+      update(playerLobbyRef, {
+        color: nextColor,
+      });
     };
 
     const currentPlayer = ref('X');
@@ -397,6 +405,7 @@ export default defineComponent({
                 name: playerNameInput.value,
                 sign: 'X',
                 gamesWon: 0,
+                color: 'orange',
               });
             } else {
               update(playerLobbyRef, {
@@ -404,6 +413,7 @@ export default defineComponent({
                 name: playerNameInput.value,
                 sign: 'O',
                 gamesWon: 0,
+                color: 'orange',
               });
             }
           });
@@ -474,6 +484,8 @@ export default defineComponent({
       ResetGame,
       changeName,
       createName,
+      changeColor,
+      playerCurrentColor
     };
   },
 });
