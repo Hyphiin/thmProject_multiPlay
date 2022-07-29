@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "home\\runner\\work\\multiPlay\\multiPlay\\multiPlay\\dist\\spa",
+    "public": ".\\dist\\spa",
     "ignore": [
       "firebase.json",
       "**/.*",
