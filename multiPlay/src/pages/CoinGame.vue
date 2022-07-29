@@ -7,7 +7,7 @@
           standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
       </div>
       <div>
-        <q-btn label="Change Color" @click="changeColor" />
+        <q-btn label="Change Color" :color="currentColor" @click="changeColor" />
       </div>
     </div>
   </q-page>
@@ -78,7 +78,7 @@ export default defineComponent({
     const db = getDatabase();
     const route = useRoute()
 
-    let playerId: string;
+    let playerId = ref<string>('');
     let lobbyId = ref<string>('');
     let playerRef: DatabaseReference;
     let playerLobbyRef: DatabaseReference;
@@ -107,9 +107,11 @@ export default defineComponent({
     };
 
     //updates Player Color
+    const currentColor = ref<string>('')
     const changeColor = () => {
-      const mySkinIndex = playerColors.indexOf(players[playerId].color);
+      const mySkinIndex = playerColors.indexOf(players[playerId.value].color);
       const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
+      currentColor.value = nextColor
       update(playerLobbyRef, {
         color: nextColor,
       });
@@ -138,7 +140,7 @@ export default defineComponent({
         //remove this key from data, then +1 player coins
         remove(storageRef(db, `lobbys/${lobbyId.value}/coins/${key}`));
         update(playerLobbyRef, {
-          coins: players[playerId].coins + 1,
+          coins: players[playerId.value].coins + 1,
         });
       }
     };
@@ -181,7 +183,7 @@ export default defineComponent({
         const addedPlayer = snapshot.val();
         const characterElement = document.createElement('div');
         characterElement.classList.add('Character', 'grid-cell');
-        if (addedPlayer.id === playerId) {
+        if (addedPlayer.id === playerId.value) {
           characterElement.classList.add('you');
         }
         characterElement.innerHTML = `
@@ -262,21 +264,21 @@ export default defineComponent({
     //*****Key Events */
 
     const handleArrowPress = (xChange: number, yChange: number) => {
-      const newX = players[playerId].x + xChange;
-      const newY = players[playerId].y + yChange;
+      const newX = players[playerId.value].x + xChange;
+      const newY = players[playerId.value].y + yChange;
 
       if (!isSolid(newX, newY)) {
         //move next space
-        players[playerId].x = newX;
-        players[playerId].y = newY;
+        players[playerId.value].x = newX;
+        players[playerId.value].y = newY;
         if (xChange === 1) {
-          players[playerId].direction = 'right';
+          players[playerId.value].direction = 'right';
         }
         if (xChange === -1) {
-          players[playerId].direction = 'left';
+          players[playerId.value].direction = 'left';
         }
         if (playerLobbyRef) {
-          set(playerLobbyRef, players[playerId]);
+          set(playerLobbyRef, players[playerId.value]);
           attemptGrabCoin(newX, newY);
         }
       }
@@ -303,14 +305,14 @@ export default defineComponent({
       if (user) {
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
-        playerId = user.uid;
+        playerId.value = user.uid;
 
         const name = createName();
         playerNameInput.value = name;
 
         const { x, y } = getRandomSafeSpot();
 
-        playerRef = storageRef(db, 'players' + playerId);
+        playerRef = storageRef(db, 'players' + playerId.value);
         get(child(playerRef, 'lobbyId')).then((snapshot) => {
           if (snapshot.exists()) {
             lobbyId.value = snapshot.val();
@@ -322,16 +324,17 @@ export default defineComponent({
           console.error(error);
         }).then(() => {
           console.log('>>>>>>>>>', lobbyId.value)
-          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/`+playerId)
-
+          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/` + playerId.value)
+          let tempColor = randomFromArray(playerColors) as string
           update(playerLobbyRef, {
             name: playerNameInput.value,
             direction: 'right',
-            color: randomFromArray(playerColors),
+            color: tempColor,
             x,
             y,
             coins: 0,
           });
+          currentColor.value = tempColor
         }
         )
 
@@ -463,7 +466,7 @@ export default defineComponent({
       return temp as Coordinates
     }
 
-    return { gameContainer, playerNameInput, changeColor, changeName };
+    return { gameContainer, playerNameInput, changeColor, changeName, currentColor };
   },
 });
 </script>
@@ -520,8 +523,7 @@ button {
   border: 0;
   cursor: pointer;
   color: white;
-  border: 1px solid rgb(241, 157, 0);
-  background-color: #f2c268;
+  border: 1px solid white;
 }
 button:active {
   position: relative;

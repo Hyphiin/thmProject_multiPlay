@@ -1,42 +1,43 @@
 <template>
   <q-page class="row items-center justify-evenly">
-    <div class="player-info">
-      <div>
-        <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
-          standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
-      </div>
-      <div>
-        <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
-          @click="changeColor" />
-      </div>
-    </div>
-    <main class="main-container">
-      <h1 class="main-container_h1">Breakthrough</h1>
-
-      <h3 class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name : oPlayer.name }}'s turn</h3>
-
-      <div class="main-container_board">
-        <div v-for="(row, x) in board" :key="x" class="board_div">
-          <div v-for="(cell, y) in row" :key="y" @click="MakeMove(x, y)" class="div_cell"
-            :style="cell === 'X' ? 'color:green' : 'color:red'">
-            <span class="material-symbols-outlined"
-              :style="cell === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
-              {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
-            </span>
-          </div>
+    <div class="game-container">
+      <div class="player-info">
+        <div>
+          <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
+            standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+        </div>
+        <div>
+          <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
+            @click="changeColor" />
         </div>
       </div>
+      <main class="main-container">
+        <h1 class="main-container_h1">Breakthrough</h1>
 
-      <div class="main-container_bottom">
-        <h2 v-if="winner" class="bottom_h2">Player '{{ winner === 'X' ? xPlayer.name : oPlayer.name }}' wins!</h2>
-        <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame">Reset</q-btn>
-      </div>
-      <div class="score">
-        <p>SCORES:</p>
-        <p>{{ xPlayer.name}}: {{ xPlayer.gamesWon}}</p>
-        <p>{{ oPlayer.name}}: {{ oPlayer.gamesWon}}</p>
-      </div>
-    </main>
+        <h3 class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name : oPlayer.name }}'s turn</h3>
+
+        <div class="main-container_board">
+          <div v-for="(row, x) in board" :key="x" class="board_div">
+            <div v-for="(cell, y) in row" :key="y" @click="MakeMove(x, y)" class="div_cell">
+              <span class="material-symbols-outlined"
+                :style="cell === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
+                {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-container_bottom">
+          <h2 v-if="winner" class="bottom_h2">Player '{{ winner === 'X' ? xPlayer.name : oPlayer.name }}' wins!</h2>
+          <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame">Reset</q-btn>
+        </div>
+        <div class="score">
+          <p>SCORES:</p>
+          <p>{{ xPlayer.name}}: {{ xPlayer.gamesWon}}</p>
+          <p>{{ oPlayer.name}}: {{ oPlayer.gamesWon}}</p>
+        </div>
+      </main>
+    </div>
   </q-page>
 </template>
 
@@ -49,12 +50,12 @@ import {
   set,
   onDisconnect,
   onValue,
-  onChildAdded,
   DatabaseReference,
-  onChildRemoved,
   update,
   get,
   child,
+  // onChildAdded,
+  // onChildRemoved,
 } from 'firebase/database';
 import { useRoute } from 'vue-router';
 import { Players } from './CoinGame.vue';
@@ -112,7 +113,7 @@ export default defineComponent({
       });
     };
 
-    const currentSign = ref<string>("X")
+    const currentSign = ref<string>('X')
 
     const xPlayer = ref<DatabaseEntry>({
       id: '',
@@ -155,9 +156,6 @@ export default defineComponent({
     const CalculateWinner = (board: Array<Array<string>>) => {
       var winner = ''
 
-      var xSign = 0
-      var oSign = 0
-
       if (checkline(board, 7,'O') === true) {
             winner = 'O'
             return winner
@@ -169,8 +167,25 @@ export default defineComponent({
     }
 
     const winner = computed(() => {
-
-      return CalculateWinner(board.value)
+      let tempWinner = CalculateWinner(board.value)
+      if (tempWinner === 'X') {
+        const winningPlayerRef = storageRef(
+          db,
+          `lobbys/${lobbyId.value}/players/${xPlayer.value.id}`
+        );
+        update(winningPlayerRef, {
+          gamesWon: xPlayer.value.gamesWon + 1,
+        });
+      } else if (tempWinner === 'O') {
+        const winningPlayerRef = storageRef(
+          db,
+          `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`
+        );
+        update(winningPlayerRef, {
+          gamesWon: oPlayer.value.gamesWon + 1,
+        });
+      }
+      return tempWinner;
     })
 
     const checkline = (board: Array<Array<string>>, x: number, playerSign: string ) => {
@@ -195,7 +210,7 @@ export default defineComponent({
               return
             }
 
-            if(moveboard.value[x][y] == "P"){
+            if(moveboard.value[x][y] == 'P'){
             moves = []
               board.value[x][y] = currentSign.value
 
@@ -248,7 +263,7 @@ export default defineComponent({
         }
       }
       moves.forEach((move)  => {
-        moveboard.value[move[0][0]][move[0][1]] = "P"
+        moveboard.value[move[0][0]][move[0][1]] = 'P'
       }
       )
     }
@@ -265,6 +280,12 @@ export default defineComponent({
       ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
       ]
       currentSign.value = 'X'
+      set(boardRef, {
+        board: board.value,
+      });
+      set(currentPlayerRef, {
+        currentPlayer: currentSign.value,
+      });
     }
 
     const initGame = () => {
@@ -297,14 +318,14 @@ export default defineComponent({
             currentSign.value = snapshot.val().currentPlayer
           }
         })
-        //fires when a new node is added to the db
-        onChildAdded(allPlayersRef, (snapshot) => {
-          const addedPlayer = snapshot.val()
-        })
-        //remove character DOM Element when they leave
-        onChildRemoved(allPlayersRef, (snapshot) => {
-          const removedKey = snapshot.val().id;
-        });
+        // //fires when a new node is added to the db
+        // onChildAdded(allPlayersRef, (snapshot) => {
+        //   const addedPlayer = snapshot.val()
+        // })
+        // //remove character DOM Element when they leave
+        // onChildRemoved(allPlayersRef, (snapshot) => {
+        //   const removedKey = snapshot.val().id;
+        // });
 
         set(boardRef, {
           board: board.value
@@ -358,14 +379,16 @@ export default defineComponent({
               id: playerId.value,
               name: playerNameInput.value,
               sign: 'X',
-              gamesWon: 0
+              gamesWon: 0,
+              color: randomFromArray(playerColors)
             });
           } else {
             update(playerLobbyRef, {
               id: playerId.value,
               name: playerNameInput.value,
               sign: 'O',
-              gamesWon: 0
+              gamesWon: 0,
+              color: randomFromArray(playerColors)
             });
           }
 
@@ -450,115 +473,127 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped scss>
-.main-container{
-  padding-top: 8px;
-  text-align: center;
-  color: white;
-  min-height: 100vh;
-  padding-top: 150px;
-  .main-container_h1{
-    margin-bottom: 8px;
-    font-size: 30px;
-    line-height: 36px;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-  .main-container_h3 {
-    font-size: 20px;
-    line-height: 28px;
-    margin-bottom: 4px;
-  }
-  .main-container_board {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 8px;
-    .board_div{
-      display: flex;
-      .div_cell{
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid white;
-        width: 80px;
-        height: 80px;
-        cursor: pointer;
+.game-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 20px;
+  .main-container {
+      padding-top: 8px;
+      text-align: center;
+      color: white;
+      min-height: 100vh;
 
-        &:hover{
-          background-color: #86aeff;
+      .main-container_h1 {
+        margin-bottom: 8px;
+        font-size: 30px;
+        line-height: 36px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .main-container_h3 {
+        font-size: 20px;
+        line-height: 28px;
+        margin-bottom: 4px;
+      }
+
+      .main-container_board {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 8px;
+
+        .board_div {
+          display: flex;
+
+          .div_cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid white;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+
+            &:hover {
+              background-color: #86aeff;
+            }
+          }
+        }
+      }
+
+      .main-container_bottom {
+        .bottom_h2 {
+          margin-bottom: 8px;
+          font-size: 60px;
+          line-height: 1;
+        }
+
+        .bottom_resetBtn {
+          margin-top: 20px;
+          font-weight: bold;
         }
       }
     }
-  }
-  .main-container_bottom {
-    .bottom_h2{
-      margin-bottom: 8px;
-      font-size: 60px;
-      line-height: 1;
-    }
-    .bottom_resetBtn{
-      margin-top: 20px;
-      font-weight: bold;
-    }
-  }
-}
-.material-symbols-outlined {
-  font-size: 70px;
-  line-height: 70px;
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 400,
-    'GRAD' 0,
-    'opsz' 48
-}
-.player-info {
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 1em;
-  display: flex;
-  gap: 0.5em;
-  align-items: flex-end;
-  margin-top: 20px;
 
-  button {
-      font-family: inherit;
+    .material-symbols-outlined {
+      font-size: 70px;
+      line-height: 70px;
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 48
+    }
+
+    .player-info {
+      height: 200px;
+      padding: 1em;
+      display: flex;
+      gap: 0.5em;
+      align-items: flex-end;
+
+
+      button {
+        font-family: inherit;
+        font-weight: bold;
+        font-size: 14px;
+        height: 44px;
+        border-radius: 4px;
+        outline: 0;
+        padding-left: 0.5em;
+        padding-right: 0.5em;
+        border: 0;
+        cursor: pointer;
+        color: white;
+        border: 1px solid white;
+      }
+
+      button:active {
+        position: relative;
+        top: 1px;
+      }
+    }
+
+    label {
+      display: block;
       font-weight: bold;
-      font-size: 14px;
-      height: 44px;
-      border-radius: 4px;
+    }
+
+    input[type='text'],
+
+    input[type='text'] {
       outline: 0;
       padding-left: 0.5em;
-      padding-right: 0.5em;
-      border: 0;
-      cursor: pointer;
-      color: white;
-      border: 1px solid rgb(241, 157, 0);
-      background-color: #f2c268;
+      border: 3px solid #222034;
+      width: 150px;
+      text-transform: uppercase;
     }
 
-    button:active {
-      position: relative;
-      top: 1px;
+    input[type='text']:focus {
+      border-color: #f000ff;
     }
 }
 
-label {
-  display: block;
-  font-weight: bold;
-}
-
-input[type='text'],
-
-input[type='text'] {
-  outline: 0;
-  padding-left: 0.5em;
-  border: 3px solid #222034;
-  width: 150px;
-  text-transform: uppercase;
-}
-
-input[type='text']:focus {
-  border-color: #f000ff;
-}
 </style>
