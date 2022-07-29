@@ -3,6 +3,7 @@
     <q-header elevated>
       <q-toolbar>
         <q-toolbar-title> MultiPlay </q-toolbar-title>
+        <q-btn class="goBackBtn" icon="directions" @click="goBack"></q-btn>
       </q-toolbar>
     </q-header>
     <q-page-container>
@@ -20,7 +21,22 @@ export default defineComponent({
   components: {},
 
   setup() {
-    return {};
+    const goBack=()=>{
+      console.log("BACK!")
+    }
+    return {
+      goBack
+    };
   },
 });
 </script>
+
+<style>
+.goBackBtn {
+  background-color: rgb(241, 157, 0);
+  color: white;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  }
+</style>
