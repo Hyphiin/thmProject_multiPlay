@@ -548,7 +548,6 @@ export default defineComponent({
     }
 
     .player-info {
-      height: 200px;
       padding: 1em;
       display: flex;
       gap: 0.5em;

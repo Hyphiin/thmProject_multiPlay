@@ -19,11 +19,28 @@
               :rules="[ val => val && val.length > 0 || 'Please type something']" />
             <q-select v-model="gamemode" :options="gamesList" label="Gamemode" />
             <q-toggle v-model="closedLobby" color="secondary" label="Make it a private Lobby" />
+            <q-input v-if="closedLobby" filled v-model="lobbyPassword" label="Password" lazy-rules
+              :rules="[ val => val && val.length >= 0 || 'Please type something']" />
           </q-form>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn outline label="Cancel" color="primary" v-close-popup />
           <q-btn label="Create Game" color="primary" v-close-popup @click="createNewLobby" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="openPWDialog">
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-form class="q-gutter-md">
+            <q-input filled v-model="typedPassword" label="Password of the Lobby" lazy-rules
+              :rules="[ val => val && val.length > 0 || 'Please type something']" />
+          </q-form>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn outline label="Cancel" color="primary" v-close-popup />
+          <q-btn label="Join Game" color="primary" v-close-popup @click="checkPassword" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -69,6 +86,7 @@ export default defineComponent({
     const allLobbysArray = ref<LobbyInterface[]>([])
 
     const lobbyName = ref<string>('')
+    const lobbyPassword = ref<string>('')
     const gamemode = ref<string>('TicTacToe')
     const gamesList = ref<string[]>(['TicTacToe', 'ConnectFour', 'CoinGame', 'Breakthrough'])
     const closedLobby = ref<boolean>(false)
@@ -80,7 +98,8 @@ export default defineComponent({
         playerId: playerId.value,
         lobbyName: lobbyName.value,
         gamemode: gamemode.value,
-        isPrivate: closedLobby.value
+        isPrivate: closedLobby.value,
+        password: lobbyPassword.value
       });
       const allPlayers = storageRef(db, `lobbys/${playerId.value + tempId}/players/${playerId.value}`);
       set(allPlayers, {
@@ -107,7 +126,7 @@ export default defineComponent({
         isFull = true
       }
       console.log(isFull)
-      allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.isPrivate, isFull))
+      allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.isPrivate, isFull, addedLobby.password))
     })
 
     onChildRemoved(storageRef(db, 'lobbys/'), (snapshot) => {
@@ -136,13 +155,42 @@ export default defineComponent({
         id: playerId.value,
       });
       // router.replace({ name: 'CoinGame' });
+      let goToLobby = true;
       console.log(allLobbysArray.value)
       allLobbysArray.value.forEach(lobby => {
         if(lobby.lobbyId === lobbyId){
           gamemode.value = lobby.gamemode
+          if(lobby.password !== ''){
+            openPWDialog.value = true;
+            lobbyToJoin.value = lobby.lobbyId
+            goToLobby = false
+          }
         }
       })
-      router.push({ name: gamemode.value, params: { lobbyId: lobbyId }})
+      if (goToLobby){
+        router.push({ name: gamemode.value, params: { lobbyId: lobbyId }})
+      }
+    }
+
+    const openPWDialog = ref<boolean>(false)
+    const typedPassword = ref<string>('');
+    const lobbyToJoin = ref<string>('');
+
+    const checkPassword = () =>{
+      openPWDialog.value = false
+
+      allLobbysArray.value.forEach(lobby => {
+        console.log("moin")
+        if (lobby.lobbyId === lobbyToJoin.value) {
+          console.log("hello")
+          if (lobby.password === typedPassword.value) {
+            console.log("test")
+            gamemode.value = lobby.gamemode
+            router.push({ name: gamemode.value, params: { lobbyId: lobbyToJoin.value } })
+          }
+        }
+      })
+
     }
 
     //*****firebase stuff*****
@@ -201,13 +249,17 @@ export default defineComponent({
       playerId,
       lobbyId,
       lobbyName,
+      lobbyPassword,
       gamemode,
       gamesList,
       closedLobby,
       createNewLobby,
       deleteLobby,
       joinGame,
-      openDialog
+      openDialog,
+      openPWDialog,
+      typedPassword,
+      checkPassword
     };
   },
 });

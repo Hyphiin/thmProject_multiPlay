@@ -6,8 +6,9 @@ export class LobbyInterface {
     currentPlayers: number;
     isPrivate: boolean;
     isFull:boolean;
+    password: string
 
-    constructor(lobbyId: string, lobbyName: string,playerId: string, gamemode: string, isPrivate: boolean, isFull: boolean) {
+    constructor(lobbyId: string, lobbyName: string,playerId: string, gamemode: string, isPrivate: boolean, isFull: boolean, password = '') {
         this.lobbyId =  lobbyId,
         this.lobbyName = lobbyName,
         this.playerId = playerId,
@@ -15,6 +16,7 @@ export class LobbyInterface {
         this.currentPlayers = 1,
         this.isPrivate = isPrivate,
         this.isFull = isFull
+        this.password = password
     }
 }
 

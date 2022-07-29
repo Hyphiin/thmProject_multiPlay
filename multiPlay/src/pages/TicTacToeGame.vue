@@ -14,11 +14,14 @@
       <main class="main-container">
         <h1 class="main-container_h1">Tic Tac Toe</h1>
 
-        <h3 class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name : oPlayer.name }}'s turn</h3>
+        <h3 v-if="oPlayer.id !== ''" class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name :
+          oPlayer.name }}'s
+          turn</h3>
+        <h3 v-else class="main-container_h3">You need another Player!</h3>
 
         <div class="main-container_board">
           <div v-for="(row, x) in board" :key="x" class="board_div">
-            <div v-for="(cell, y) in row" :key="y" @click="MakeMove(x, y)" class="div_cell">
+            <div v-for="(cell, y) in row" :key="y" @click="oPlayer.id !== '' ? MakeMove(x, y): null" class="div_cell">
               <span class="material-symbols-outlined"
                 :style="cell === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
                 {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
@@ -34,10 +37,15 @@
           </h2>
           <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame">Reset</q-btn>
         </div>
-        <div class="score">
-          <p>SCORES:</p>
-          <p>{{ xPlayer.name}}: {{ xPlayer.gamesWon}}</p>
-          <p>{{ oPlayer.name}}: {{ oPlayer.gamesWon}}</p>
+        <div class="score" v-if="xPlayer.gamesWon >= oPlayer.gamesWon">
+          <h1 class="main-container_h1">SCORES:</h1>
+          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
+          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
+        </div>
+        <div class="score" v-if="xPlayer.gamesWon < oPlayer.gamesWon">
+          <h1 class="main-container_h1">SCORES:</h1>
+          <div class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
+          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
         </div>
       </main>
     </div>
@@ -57,8 +65,8 @@ import {
   update,
   get,
   child,
-  // onChildAdded,
-  // onChildRemoved,
+  onChildAdded,
+  onChildRemoved,
 } from 'firebase/database';
 import { useRoute } from 'vue-router';
 import { Players } from './CoinGame.vue';
@@ -232,15 +240,18 @@ export default defineComponent({
 
         //fires when change occurs
         onValue(allPlayersRef, (snapshot) => {
+          console.log("change")
           players = snapshot.val() || {};
           Object.keys(players).forEach((key) => {
             const characterState = players[key] as unknown as DatabaseEntry;
             if(characterState.sign === 'X'){
               xPlayer.value = characterState
-            } else {
+            } else if (characterState.sign === 'O') {
               oPlayer.value = characterState
             }
           });
+          console.log("change X", xPlayer.value)
+          console.log("change O", oPlayer.value)
         });
         onValue(boardRef, (snapshot) => {
           if (snapshot.val() != null) {
@@ -252,14 +263,24 @@ export default defineComponent({
             currentSign.value = snapshot.val().currentPlayer;
           }
         });
-        // //fires when a new node is added to the db
-        // onChildAdded(allPlayersRef, (snapshot) => {
-        //   const addedPlayer = snapshot.val() as DatabaseEntry;
-        // });
-        // //remove character DOM Element when they leave
-        // onChildRemoved(allPlayersRef, (snapshot) => {
-        //   const removedKey = snapshot.val().id;
-        // });
+        //fires when a new node is added to the db
+        onChildAdded(allPlayersRef, (snapshot) => {
+          const addedPlayer = snapshot.val() as DatabaseEntry;
+          console.log("hello:", addedPlayer)
+          //oPlayer.value = addedPlayer
+        });
+        //remove character DOM Element when they leave
+        onChildRemoved(allPlayersRef, (snapshot) => {
+          const removedKey = snapshot.val();
+          console.log("bye", removedKey)
+          // oPlayer.value = {
+          //   id: '',
+          //   name: '',
+          //   sign: 'O',
+          //   gamesWon: 0,
+          //   color: ''
+          // }
+        });
 
         set(boardRef, {
           board: board.value,
@@ -480,7 +501,6 @@ export default defineComponent({
   }
 
   .player-info {
-    height: 200px;
     padding: 1em;
     display: flex;
     gap: 0.5em;
@@ -505,6 +525,15 @@ export default defineComponent({
     position: relative;
     top: 1px;
   }
+  }
+
+  .score{
+    margin-top: 40px;
+    .score-div{
+      font-size: 20px;
+        line-height: 28px;
+        margin-bottom: 4px;
+    }
   }
 
   label {
