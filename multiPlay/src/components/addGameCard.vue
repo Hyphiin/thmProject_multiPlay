@@ -25,13 +25,13 @@ export default defineComponent({
 <style lang="scss" scoped>
 .my-card {
   width: 170px;
-  height: 180px;
+  height: 150px;
   margin: 20px;
 
   .q-card__section{
     display: flex;
     flex-direction: column;
-    height: 180px;
+    height: 150px;
     display: flex;
     justify-content: space-evenly;
     align-items: center;

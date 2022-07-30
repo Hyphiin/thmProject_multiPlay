@@ -142,6 +142,8 @@ export default defineComponent({
 
       if (Object.keys(addedLobby.players).length >= 2 && addedLobby.gamemode !== 'CoinGame'){
         isFull = true
+      } else if (Object.keys(addedLobby.players).length >= 5 && addedLobby.gamemode === 'CoinGame') {
+        isFull = true
       }
       console.log(isFull)
       allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.isPrivate, isFull, addedLobby.password))
