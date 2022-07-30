@@ -347,7 +347,7 @@ export default defineComponent({
             const characterState = players[key] as unknown as DatabaseEntry;
             if (characterState.sign === 'X') {
               xPlayer.value = characterState
-            } else {
+            } else if(characterState.sign === 'O'){
               oPlayer.value = characterState
             }
           });

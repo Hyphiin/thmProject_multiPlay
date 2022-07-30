@@ -15,16 +15,17 @@
         <h1 class="main-container_h1">Breakthrough</h1>
 
         <h3 v-if="oPlayer.id !== ''" class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name :
-          oPlayer.name }}'s
+        oPlayer.name }}'s
           turn</h3>
         <h3 v-else class="main-container_h3">You need another Player!</h3>
 
         <div class="main-container_board">
           <div v-for="(row, x) in board" :key="x" class="board_div">
-            <div v-for="(cell, y) in row" :key="y" @click="oPlayer.id !== '' ? MakeMove(x, y): null" class="div_cell">
+            <div v-for="(cell, y) in row" :key="y" @click="oPlayer.id !== '' ? MakeMove(x, y): null" class="div_cell"
+              :style="[cell.isActiveCell ? 'background-color:#92b6f6' : '', cell.isMoveCell ? 'background-color:#4786f2' : '']">
               <span class="material-symbols-outlined"
-                :style="cell === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
-                {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
+                :style="cell.cellValue === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
+                {{ cell.cellValue === 'X' ? 'Close' : cell.cellValue === 'O' ? 'Circle' : ''}}
               </span>
             </div>
           </div>
@@ -77,6 +78,11 @@ interface DatabaseEntry {
   color: string;
 }
 
+interface BoardEntry {
+  cellValue: string;
+  isActiveCell: boolean;
+  isMoveCell: boolean;
+}
 
 export default defineComponent({
   name: 'BreakthroughGame',
@@ -139,38 +145,92 @@ export default defineComponent({
       color: 'purple'
     });
 
+    const oBoardArray: BoardEntry[] = [
+      { cellValue: 'O', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'O', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'O', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'O', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'O', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'O', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'O', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'O', isActiveCell: false, isMoveCell: false },
+    ]
+    const xBoardArray: BoardEntry[] = [
+      { cellValue: 'X', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'X', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'X', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'X', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'X', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'X', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'X', isActiveCell: false, isMoveCell: false },
+      { cellValue: 'X', isActiveCell: false, isMoveCell: false },
+    ]
+    const neutalBoardArray: BoardEntry[] = [
+      { cellValue: '', isActiveCell: false, isMoveCell: false },
+      { cellValue: '', isActiveCell: false, isMoveCell: false },
+      { cellValue: '', isActiveCell: false, isMoveCell: false },
+      { cellValue: '', isActiveCell: false, isMoveCell: false },
+      { cellValue: '', isActiveCell: false, isMoveCell: false },
+      { cellValue: '', isActiveCell: false, isMoveCell: false },
+      { cellValue: '', isActiveCell: false, isMoveCell: false },
+      { cellValue: '', isActiveCell: false, isMoveCell: false },
+    ]
+
     let currentPlayerRef: DatabaseReference;
-    const board = ref([
-      ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
-      ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
-      ['', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', ''],
-      ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-      ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
+    const board = ref<Array<BoardEntry[]>>([
+      oBoardArray,
+      oBoardArray,
+      neutalBoardArray,
+      neutalBoardArray,
+      neutalBoardArray,
+      neutalBoardArray,
+      xBoardArray,
+      xBoardArray,
     ]);
-    const moveboard = ref([
-      ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
-      ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
-      ['', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', ''],
-      ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-      ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
+    const moveboard = ref<Array<BoardEntry[]>>([
+      oBoardArray,
+      oBoardArray,
+      neutalBoardArray,
+      neutalBoardArray,
+      neutalBoardArray,
+      neutalBoardArray,
+      xBoardArray,
+      xBoardArray,
     ]);
 
-    const CalculateWinner = (board: Array<Array<string>>) => {
+    const CalculateWinner = (boards: Array<Array<BoardEntry>>) => {
       var winner = ''
 
-      if (checkline(board, 7,'O') === true) {
-            winner = 'O'
-            return winner
-          } else if (checkline(board, 0, 'X') === true) {
-            winner = 'X'
-            return winner
+      if (checkline(boards, 7,'O') === true) {
+        winner = 'O'
+        return winner
+      } else if (checkline(boards, 0, 'X') === true) {
+        winner = 'X'
+        return winner
+      }
+
+      var noX = true;
+      var noO = true
+
+      Object.values(board.value).forEach(cellArray => {
+        cellArray.forEach(cell => {
+          if(cell.cellValue === 'X'){
+            noX = false
           }
+          if (cell.cellValue === 'O') {
+            noO = false
+          }
+        })
+      })
+      if(noX) {
+        winner = 'O'
+        return winner
+      }
+      if (noO) {
+        winner = 'X'
+        return winner
+      }
+
       return null
     }
 
@@ -196,9 +256,9 @@ export default defineComponent({
       return tempWinner;
     })
 
-    const checkline = (board: Array<Array<string>>, x: number, playerSign: string ) => {
+    const checkline = (board: Array<Array<BoardEntry>>, x: number, playerSign: string ) => {
       for(let i = 0; i <= 7; i++){
-        if(board[x][i] === playerSign){
+        if(board[x][i].cellValue === playerSign){
           return true
         }
       }
@@ -211,22 +271,30 @@ export default defineComponent({
             if (winner.value) return
 
 
-            if (!getPossibleMoves && board.value[x][y] == currentSign.value){
+            if (!getPossibleMoves && board.value[x][y].cellValue == currentSign.value){
               GetMoves(x,y);
               oldPosition.push([x,y])
+              board.value[x][y].isActiveCell = true
               getPossibleMoves = true
               return
             }
 
-            if(moveboard.value[x][y] == 'P'){
+            if(board.value[x][y].isMoveCell === true){
             moves = []
-              board.value[x][y] = currentSign.value
+              board.value[x][y].cellValue = currentSign.value
 
-            board.value[oldPosition[0][0]][oldPosition[0][1]] = ''
+            board.value[oldPosition[0][0]][oldPosition[0][1]].cellValue = ''
             moveboard.value = board.value
             oldPosition = []
             getPossibleMoves = false
               currentSign.value = currentSign.value === 'X' ? 'O' : 'X'
+
+            Object.values(board.value).forEach(cellArray => {
+              cellArray.forEach(cell => {
+                cell.isActiveCell = false;
+                cell.isMoveCell = false
+              })
+            })
 
             update(boardRef, {
               board: board.value
@@ -236,56 +304,61 @@ export default defineComponent({
             });
           }
         }}})
-
     }
 
     const GetMoves = (x: number, y: number) => {
       if (currentSign.value == 'X'){
         if(y-1 >= 0 ){
-          if(board.value[x-1][y-1] != 'X'){
+          if(board.value[x-1][y-1].cellValue != 'X'){
             moves.push([[x-1, y-1]])
+            board.value[x - 1][y - 1].isMoveCell = true
           }
         }
-          if(board.value[x-1][y] == ''){
+          if(board.value[x-1][y].cellValue == ''){
             moves.push([[x-1, y]])
+            board.value[x - 1][y].isMoveCell = true
           }
         if(y+1 <= 7 ){
-          if(board.value[x-1][y+1] != 'X'){
+          if(board.value[x-1][y+1].cellValue != 'X'){
             moves.push([[x-1, y+1]])
+            board.value[x - 1][y + 1].isMoveCell = true
           }
         }
       }
       if (currentSign.value == 'O'){
         if(y-1 >= 0 ){
-          if(board.value[x+1][y-1] != 'O'){
+          if(board.value[x+1][y-1].cellValue != 'O'){
             moves.push([[x+1, y-1]])
+            board.value[x + 1][y - 1].isMoveCell = true
           }
         }
-          if(board.value[x+1][y] == ''){
+          if(board.value[x+1][y].cellValue == ''){
             moves.push([[x+1, y]])
+            board.value[x + 1][y].isMoveCell = true
           }
         if(y+1 <= 7 ){
-          if(board.value[x+1][y+1] != 'O'){
+          if(board.value[x+1][y+1].cellValue != 'O'){
             moves.push([[x+1, y+1]])
+            board.value[x + 1][y + 1].isMoveCell = true
           }
         }
       }
       moves.forEach((move)  => {
-        moveboard.value[move[0][0]][move[0][1]] = 'P'
+        moveboard.value[move[0][0]][move[0][1]].cellValue = 'P'
       }
       )
     }
 
     const ResetGame = () => {
       board.value = [
-      ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
-      ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
-      ['', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', '', ''],
-      ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-      ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
+        oBoardArray,
+        oBoardArray,
+        neutalBoardArray,
+        neutalBoardArray,
+        neutalBoardArray,
+        neutalBoardArray,
+        xBoardArray,
+        xBoardArray,
       ]
       currentSign.value = 'X'
       set(boardRef, {
@@ -311,7 +384,7 @@ export default defineComponent({
             const characterState = players[key] as unknown as DatabaseEntry
             if (characterState.sign === 'X') {
               xPlayer.value = characterState
-            } else {
+            } else if(characterState.sign === 'O') {
               oPlayer.value = characterState
             }
           })
