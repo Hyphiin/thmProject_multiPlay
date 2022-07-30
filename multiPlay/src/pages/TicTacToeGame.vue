@@ -2,13 +2,18 @@
   <q-page class="row items-center justify-evenly">
     <div class="game-container">
       <div class="player-info">
-        <div>
-          <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
-            standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+        <div class="info">
+          <div>
+            <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
+              standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+          </div>
+          <div>
+            <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
+              @click="changeColor" />
+          </div>
         </div>
         <div>
-          <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
-            @click="changeColor" />
+          <q-btn v-if="!isStartPage" class="goBackBtn" icon="home" @click="goBack"></q-btn>
         </div>
       </div>
       <main class="main-container">
@@ -68,7 +73,7 @@ import {
   onChildAdded,
   onChildRemoved,
 } from 'firebase/database';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Players } from './CoinGame.vue';
 import { computed } from '@vue/reactivity';
 
@@ -86,6 +91,7 @@ export default defineComponent({
   setup() {
     const db = getDatabase();
     const route = useRoute();
+    const router = useRouter();
 
     let playerId = ref<string>('');
     let lobbyId = ref<string>('');
@@ -250,6 +256,20 @@ export default defineComponent({
               oPlayer.value = characterState
             }
           });
+          if (Object.keys(players).length === 1) {
+            oPlayer.value = {
+              id: '',
+              name: '',
+              sign: 'O',
+              gamesWon: 0,
+              color: 'purple'
+            }
+            const currLobbyRef = storageRef(db, `lobbys/${lobbyId.value}`);
+            update(currLobbyRef, {
+              currentPlayers: 1
+            });
+          }
+
           console.log("change X", xPlayer.value)
           console.log("change O", oPlayer.value)
         });
@@ -273,13 +293,7 @@ export default defineComponent({
         onChildRemoved(allPlayersRef, (snapshot) => {
           const removedKey = snapshot.val();
           console.log("bye", removedKey)
-          // oPlayer.value = {
-          //   id: '',
-          //   name: '',
-          //   sign: 'O',
-          //   gamesWon: 0,
-          //   color: ''
-          // }
+          router.push({ name: 'MainLobby'})
         });
 
         set(boardRef, {
@@ -290,6 +304,22 @@ export default defineComponent({
         });
       }
     };
+
+    const isStartPage = computed(() => {
+      let tempBool = false
+      if (router.currentRoute.value.name === 'MainLobby') {
+        tempBool = true
+      }
+      return tempBool
+    })
+
+    const goBack = () => {
+      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players//${lobbyId.value}`);
+      //TODOOOO
+      //playerRef.remove()
+
+      router.push({ name: 'MainLobby' })
+    }
 
     //*****firebase stuff*****
     const auth = getAuth();
@@ -423,7 +453,9 @@ export default defineComponent({
       ResetGame,
       changeName,
       changeColor,
-      playerCurrentColor
+      playerCurrentColor,
+      isStartPage,
+      goBack
     };
   },
 });
@@ -501,30 +533,43 @@ export default defineComponent({
   }
 
   .player-info {
-    padding: 1em;
     display: flex;
-    gap: 0.5em;
-    align-items: flex-end;
+    flex-direction: row;
+    justify-content: space-between;
+    .info{
+      padding: 1em;
+      display: flex;
+      gap: 0.5em;
+      align-items: flex-end;
 
-  button {
-    font-family: inherit;
-    font-weight: bold;
-    font-size: 14px;
-    height: 44px;
-    border-radius: 4px;
-    outline: 0;
-    padding-left: 0.5em;
-    padding-right: 0.5em;
-    border: 0;
-    cursor: pointer;
-    color: white;
-    border: 1px solid white;
-  }
+      button {
+        font-family: inherit;
+        font-weight: bold;
+        font-size: 14px;
+        height: 44px;
+        border-radius: 4px;
+        outline: 0;
+        padding-left: 0.5em;
+        padding-right: 0.5em;
+        border: 0;
+        cursor: pointer;
+        color: white;
+        border: 1px solid white;
+      }
 
-  button:active {
-    position: relative;
-    top: 1px;
-  }
+      button:active {
+        position: relative;
+        top: 1px;
+      }
+    }
+    .goBackBtn {
+      background-color: rgb(241, 157, 0);
+      color: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      margin-right: 20px;
+    }
   }
 
   .score{

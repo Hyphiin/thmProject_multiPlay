@@ -2,8 +2,8 @@
   <q-layout view="lHh Lpr lFf">
     <q-header elevated>
       <q-toolbar>
-        <q-toolbar-title @click="goBack"> MultiPlay </q-toolbar-title>
-        <q-btn v-if="!isStartPage" class="goBackBtn" icon="home" @click="goBack"></q-btn>
+        <q-toolbar-title> MultiPlay </q-toolbar-title>
+        <!-- <q-btn v-if="!isStartPage" class="goBackBtn" icon="home" @click="goBack"></q-btn> -->
       </q-toolbar>
     </q-header>
     <q-page-container>
@@ -14,7 +14,7 @@
 
 <script lang="ts">
 import { computed } from '@vue/reactivity';
-import { defineComponent, ref } from 'vue';
+import { defineComponent } from 'vue';
 import { useRouter } from 'vue-router';
 
 
@@ -22,24 +22,23 @@ export default defineComponent({
   name: 'MainLayout',
   components: {},
   setup() {
-    const router = useRouter();
+    // const router = useRouter();
 
-    const isStartPage = computed(() =>{
-      let tempBool = false
-      if (router.currentRoute.value.name === 'MainLobby'){
-        tempBool = true
-      }
-      return tempBool
-    })
+    // const isStartPage = computed(() =>{
+    //   let tempBool = false
+    //   if (router.currentRoute.value.name === 'MainLobby'){
+    //     tempBool = true
+    //   }
+    //   return tempBool
+    // })
 
+    // const goBack=()=>{
+    //   router.push({ name: 'MainLobby' })
+    // }
 
-
-    const goBack=()=>{
-      router.push({ name: 'MainLobby' })
-    }
     return {
-      goBack,
-      isStartPage
+      // goBack,
+      // isStartPage
     };
   },
 });

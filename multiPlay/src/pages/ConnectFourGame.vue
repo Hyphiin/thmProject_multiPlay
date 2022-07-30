@@ -62,10 +62,10 @@ import {
   update,
   get,
   child,
+  onChildRemoved,
   // onChildAdded,
-  // onChildRemoved,
 } from 'firebase/database';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Players } from './CoinGame.vue';
 import { computed } from '@vue/reactivity';
 
@@ -86,6 +86,7 @@ export default defineComponent({
     });
     const db = getDatabase();
     const route = useRoute();
+    const router = useRouter();
 
     let playerId = ref<string>('');
     let lobbyId = ref<string>('');
@@ -366,10 +367,11 @@ export default defineComponent({
         // onChildAdded(allPlayersRef, (snapshot) => {
         //   const addedPlayer = snapshot.val();
         // });
-        // //remove character DOM Element when they leave
-        // onChildRemoved(allPlayersRef, (snapshot) => {
-        //   const removedKey = snapshot.val().id;
-        // });
+        //remove character DOM Element when they leave
+        onChildRemoved(allPlayersRef, (snapshot) => {
+          //const removedKey = snapshot.val().id;
+          router.push({ name: 'MainLobby' })
+        });
 
         set(boardRef, {
           board: board.value,

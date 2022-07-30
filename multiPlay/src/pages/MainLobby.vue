@@ -4,7 +4,7 @@
       <div class="lobby-div">
         <div class="lobby-card" v-for="lobby in allLobbysArray" :key="lobby.lobbyId">
           <lobby-card :playerId="lobby.playerId" :lobbyId="lobby.lobbyId" :lobbyName="lobby.lobbyName"
-            :gamemode="lobby.gamemode" :isPrivate="lobby.isPrivate" :isFull="lobby.isFull" @deleteLobby="deleteLobby"
+            :gamemode="lobby.gamemode" :isPrivate="lobby.isPrivate" :isFull="lobby.isFull" :currentPlayers="lobby.currentPlayers" @deleteLobby="deleteLobby"
             @joinGame="joinGame" />
         </div>
         <add-game-card @createGame="openDialog = true" />
@@ -63,6 +63,7 @@ import {
   onChildAdded,
   onChildRemoved,
   onDisconnect,
+  onValue,
   ref as storageRef,
   remove,
 set,
@@ -70,6 +71,7 @@ update,
 } from 'firebase/database';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'vue-router';
+
 
 export default defineComponent({
   name: 'MainLobby',
@@ -113,7 +115,8 @@ export default defineComponent({
           lobbyName: lobbyName.value,
           gamemode: gamemode.value,
           isPrivate: closedLobby.value,
-          password: lobbyPassword.value
+          password: lobbyPassword.value,
+          currentPlayers: 1
         });
         const allPlayers = storageRef(db, `lobbys/${playerId.value + tempId}/players/${playerId.value}`);
         set(allPlayers, {
@@ -140,13 +143,13 @@ export default defineComponent({
       const addedLobby = snapshot.val();
       let isFull = false;
 
-      if (Object.keys(addedLobby.players).length >= 2 && addedLobby.gamemode !== 'CoinGame'){
+      if (addedLobby.currentPlayers >= 2 && addedLobby.gamemode !== 'CoinGame'){
         isFull = true
-      } else if (Object.keys(addedLobby.players).length >= 5 && addedLobby.gamemode === 'CoinGame') {
+      } else if (addedLobby.currentPlayers >= 5 && addedLobby.gamemode === 'CoinGame') {
         isFull = true
       }
       console.log(isFull)
-      allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.isPrivate, isFull, addedLobby.password))
+      allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.currentPlayers, addedLobby.isPrivate, isFull, addedLobby.password))
     })
 
     onChildRemoved(storageRef(db, 'lobbys/'), (snapshot) => {
@@ -156,6 +159,31 @@ export default defineComponent({
           allLobbysArray.value.splice(idx,1)
         }
       })
+    })
+
+    onValue(storageRef(db, 'lobbys/'), (snapshot) => {
+      let allLobbys: object = snapshot.val()
+
+        Object.values(allLobbys).forEach(lobby => {
+          if (lobby.id !== undefined || lobby.id !== null || lobby.id !== ''){
+            let currPlayers = Object.keys(lobby.players).length
+            const lobbyRef = storageRef(db, `lobbys/${lobby.id}`);
+            update(lobbyRef, {
+              currentPlayers: currPlayers
+            });
+
+            allLobbysArray.value.forEach(lobbyArray => {
+              if (lobbyArray.lobbyId === lobby.id) {
+                lobbyArray.currentPlayers = currPlayers
+                if (lobbyArray.currentPlayers >= 2 && lobbyArray.gamemode !== 'CoinGame') {
+                  lobbyArray.isFull = true
+                } else if (lobbyArray.currentPlayers >= 5 && lobbyArray.gamemode === 'CoinGame') {
+                  lobbyArray.isFull = true
+                }
+              }
+            })
+          }
+        })
     })
 
     const deleteLobby = (deleteId: string) => {
@@ -170,10 +198,11 @@ export default defineComponent({
     }
 
     const joinGame = (lobbyId: string) => {
-      const allPlayers = storageRef(db, `lobbys/${lobbyId}/players/${playerId.value}`);
-      set(allPlayers, {
+      const playersRef = storageRef(db, `lobbys/${lobbyId}/players/${playerId.value}`);
+      set(playersRef, {
         id: playerId.value,
       });
+
       // router.replace({ name: 'CoinGame' });
       let goToLobby = true;
       console.log(allLobbysArray.value)

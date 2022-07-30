@@ -37,7 +37,7 @@ get,
 child,
 } from 'firebase/database';
 import { KeyPressListener } from '../components/KeyPressListener';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 export interface Players {
   [key: string]: DatabaseEntry;
@@ -82,7 +82,8 @@ export default defineComponent({
   components: {},
   setup() {
     const db = getDatabase();
-    const route = useRoute()
+    const route = useRoute();
+    const router = useRouter();
 
     let playerId = ref<string>('');
     let lobbyId = ref<string>('');
@@ -146,7 +147,7 @@ export default defineComponent({
 
     //place Coin
     const placeCoin = () => {
-      // if(lobbyId !== undefined){
+      if(lobbyId.value !== ''){
         const { x, y } = getRandomSafeSpot();
         const coinRef = storageRef(db, `lobbys/${lobbyId.value}/coins/${getKeyString(x, y)}`);
         set(coinRef, {
@@ -157,7 +158,7 @@ export default defineComponent({
         setTimeout(() => {
           placeCoin();
         }, randomFromArray(coinTimeouts) as number);
-      // }
+      }
     };
 
     //grab coin
@@ -169,6 +170,7 @@ export default defineComponent({
         update(playerLobbyRef, {
           coins: players.value[playerId.value].coins + 1,
         });
+        coins[key] = false
       }
     };
 
@@ -255,8 +257,9 @@ export default defineComponent({
         const removedKey = snapshot.val().id;
         const tempVar = playerElements[removedKey] as HTMLDivElement;
         gameContainer.value?.removeChild(tempVar);
-
         delete playerElements[removedKey];
+        lobbyId.value = ''
+        router.push({ name: 'MainLobby' })
       });
 
       onChildAdded(allCoinsRef, (snapshot) => {
