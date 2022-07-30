@@ -1,33 +1,48 @@
 <template>
   <q-page class="row items-center justify-evenly">
-    <div class="player-info">
-      <div>
-        <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
-          standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
-      </div>
-    </div>
-    <main class="main-container">
-      <h1 class="main-container_h1">Breakthrough</h1>
-
-      <h3 class="main-container_h3">Player {{ currentPlayer }}'s turn</h3>
-
-      <div class="main-container_board">
-        <div v-for="(row, x) in board" :key="x" class="board_div">
-          <div v-for="(cell, y) in row" :key="y" @click="MakeMove(x, y)" class="div_cell"
-            :style="cell === 'X' ? 'color:green' : 'color:red'">
-            <span class="material-symbols-outlined"
-              :style="cell === 'X' ? 'color:rgb(241, 157, 0);' : 'color:rgb(73, 0, 141);'">
-              {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
-            </span>
-          </div>
+    <div class="game-container">
+      <div class="player-info">
+        <div>
+          <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
+            standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+        </div>
+        <div>
+          <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
+            @click="changeColor" />
         </div>
       </div>
+      <main class="main-container">
+        <h1 class="main-container_h1">Breakthrough</h1>
 
-      <div class="main-container_bottom">
-        <h2 v-if="winner" class="bottom_h2">Player '{{ winner }}' wins!</h2>
-        <q-btn class="bottom_resetBtn" @click="ResetGame">Reset</q-btn>
-      </div>
-    </main>
+        <h3 class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name : oPlayer.name }}'s turn</h3>
+
+        <div class="main-container_board">
+          <div v-for="(row, x) in board" :key="x" class="board_div">
+            <div v-for="(cell, y) in row" :key="y" @click="MakeMove(x, y)" class="div_cell">
+              <span class="material-symbols-outlined"
+                :style="cell === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
+                {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-container_bottom">
+          <h2 v-if="winner" class="bottom_h2">Player '{{ winner === 'X' ? xPlayer.name : oPlayer.name }}' wins!</h2>
+          <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame">Reset</q-btn>
+        </div>
+        <div class="score" v-if="xPlayer.gamesWon >= oPlayer.gamesWon">
+          <h1 class="main-container_h1">SCORES:</h1>
+          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
+          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
+        </div>
+        <div class="score" v-if="xPlayer.gamesWon < oPlayer.gamesWon">
+          <h1 class="main-container_h1">SCORES:</h1>
+          <div class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
+          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
+        </div>
+      </main>
+    </div>
   </q-page>
 </template>
 
@@ -40,12 +55,12 @@ import {
   set,
   onDisconnect,
   onValue,
-  onChildAdded,
   DatabaseReference,
-  onChildRemoved,
   update,
   get,
   child,
+  // onChildAdded,
+  // onChildRemoved,
 } from 'firebase/database';
 import { useRoute } from 'vue-router';
 import { Players } from './CoinGame.vue';
@@ -56,6 +71,7 @@ interface DatabaseEntry {
   name: string;
   sign: string;
   gamesWon: number;
+  color: string;
 }
 
 
@@ -69,7 +85,7 @@ export default defineComponent({
     const db = getDatabase();
     const route = useRoute()
 
-    let playerId: string;
+    let playerId = ref<string>('');
     let lobbyId = ref<string>('');
     let playerRef: DatabaseReference;
     let boardRef: DatabaseReference;
@@ -91,7 +107,35 @@ export default defineComponent({
       }
     };
 
-    const currentPlayer = ref('X')
+    //updates Player Color
+    const playerCurrentColor = ref<string>('orange');
+    const changeColor = () => {
+      const myColorIndex = playerColors.indexOf(players[playerId.value].color);
+      const nextColor = playerColors[myColorIndex + 1] || playerColors[0];
+      playerCurrentColor.value = nextColor
+      update(playerLobbyRef, {
+        color: nextColor,
+      });
+    };
+
+    const currentSign = ref<string>('X')
+
+    const xPlayer = ref<DatabaseEntry>({
+      id: '',
+      name: '',
+      sign: 'X',
+      gamesWon: 0,
+      color: 'orange'
+    });
+
+    const oPlayer = ref<DatabaseEntry>({
+      id: '',
+      name: '',
+      sign: 'O',
+      gamesWon: 0,
+      color: 'purple'
+    });
+
     let currentPlayerRef: DatabaseReference;
     const board = ref([
       ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
@@ -117,24 +161,36 @@ export default defineComponent({
     const CalculateWinner = (board: Array<Array<string>>) => {
       var winner = ''
 
-      var xSign = 0
-      var oSign = 0
-
       if (checkline(board, 7,'O') === true) {
             winner = 'O'
-            console.log('O GEWINNT DIAGONAL!')
             return winner
           } else if (checkline(board, 0, 'X') === true) {
             winner = 'X'
-            console.log('X GEWINNT DIAGONAL!')
             return winner
           }
       return null
     }
 
     const winner = computed(() => {
-
-      return CalculateWinner(board.value)
+      let tempWinner = CalculateWinner(board.value)
+      if (tempWinner === 'X') {
+        const winningPlayerRef = storageRef(
+          db,
+          `lobbys/${lobbyId.value}/players/${xPlayer.value.id}`
+        );
+        update(winningPlayerRef, {
+          gamesWon: xPlayer.value.gamesWon + 1,
+        });
+      } else if (tempWinner === 'O') {
+        const winningPlayerRef = storageRef(
+          db,
+          `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`
+        );
+        update(winningPlayerRef, {
+          gamesWon: oPlayer.value.gamesWon + 1,
+        });
+      }
+      return tempWinner;
     })
 
     const checkline = (board: Array<Array<string>>, x: number, playerSign: string ) => {
@@ -146,38 +202,34 @@ export default defineComponent({
     }
 
    const MakeMove = (x: number, y: number) =>  {
-      console.log(playerRef)
-      console.log(playerId)
       get(child(playerLobbyRef, 'sign')).then((snapshot) => {
         if (snapshot.exists()) {
-          if (snapshot.val() === currentPlayer.value) {
-            console.log('MAKEMOVE:', playerRef)
+          if (snapshot.val() === currentSign.value) {
             if (winner.value) return
-            console.log(getPossibleMoves);
-            
-            
-            if (!getPossibleMoves && board.value[x][y] == currentPlayer.value){
+
+
+            if (!getPossibleMoves && board.value[x][y] == currentSign.value){
               GetMoves(x,y);
               oldPosition.push([x,y])
               getPossibleMoves = true
               return
             }
 
-            if(moveboard.value[x][y] == "P"){
+            if(moveboard.value[x][y] == 'P'){
             moves = []
-            board.value[x][y] = currentPlayer.value
-            
+              board.value[x][y] = currentSign.value
+
             board.value[oldPosition[0][0]][oldPosition[0][1]] = ''
             moveboard.value = board.value
             oldPosition = []
             getPossibleMoves = false
-            currentPlayer.value = currentPlayer.value === 'X' ? 'O' : 'X'
+              currentSign.value = currentSign.value === 'X' ? 'O' : 'X'
 
             update(boardRef, {
               board: board.value
             });
-            update(currentPlayerRef, {
-              currentPlayer: currentPlayer.value
+              update(currentPlayerRef, {
+                currentPlayer: currentSign.value
             });
           }
         }}})
@@ -185,7 +237,7 @@ export default defineComponent({
     }
 
     const GetMoves = (x: number, y: number) => {
-      if(currentPlayer.value == 'X'){
+      if (currentSign.value == 'X'){
         if(y-1 >= 0 ){
           if(board.value[x-1][y-1] != 'X'){
             moves.push([[x-1, y-1]])
@@ -200,7 +252,7 @@ export default defineComponent({
           }
         }
       }
-      if(currentPlayer.value == 'O'){
+      if (currentSign.value == 'O'){
         if(y-1 >= 0 ){
           if(board.value[x+1][y-1] != 'O'){
             moves.push([[x+1, y-1]])
@@ -215,9 +267,8 @@ export default defineComponent({
           }
         }
       }
-      console.log(moves)
       moves.forEach((move)  => {
-        moveboard.value[move[0][0]][move[0][1]] = "P"
+        moveboard.value[move[0][0]][move[0][1]] = 'P'
       }
       )
     }
@@ -233,7 +284,13 @@ export default defineComponent({
       ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
       ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
       ]
-      currentPlayer.value = 'X'
+      currentSign.value = 'X'
+      set(boardRef, {
+        board: board.value,
+      });
+      set(currentPlayerRef, {
+        currentPlayer: currentSign.value,
+      });
     }
 
     const initGame = () => {
@@ -249,37 +306,37 @@ export default defineComponent({
           players = snapshot.val() || {}
           Object.keys(players).forEach((key) => {
             const characterState = players[key] as unknown as DatabaseEntry
-            console.log('characterState', characterState)
+            if (characterState.sign === 'X') {
+              xPlayer.value = characterState
+            } else {
+              oPlayer.value = characterState
+            }
           })
         })
         onValue(boardRef, (snapshot) => {
-          console.log('onValue - boardRef', snapshot.val())
           if (snapshot.val() != null){
             board.value = snapshot.val().board
           }
         })
         onValue(currentPlayerRef, (snapshot) => {
-          console.log('onValue - currentPlayerRef',snapshot.val())
           if (snapshot.val() != null) {
-            currentPlayer.value = snapshot.val().currentPlayer
+            currentSign.value = snapshot.val().currentPlayer
           }
         })
-        //fires when a new node is added to the db
-        onChildAdded(allPlayersRef, (snapshot) => {
-          const addedPlayer = snapshot.val()
-          console.log('addedPlayer',addedPlayer)
-        })
-        //remove character DOM Element when they leave
-        onChildRemoved(allPlayersRef, (snapshot) => {
-          const removedKey = snapshot.val().id;
-          console.log('removedKey', removedKey)
-        });
+        // //fires when a new node is added to the db
+        // onChildAdded(allPlayersRef, (snapshot) => {
+        //   const addedPlayer = snapshot.val()
+        // })
+        // //remove character DOM Element when they leave
+        // onChildRemoved(allPlayersRef, (snapshot) => {
+        //   const removedKey = snapshot.val().id;
+        // });
 
         set(boardRef, {
           board: board.value
         });
         set(currentPlayerRef, {
-          currentPlayer: currentPlayer.value
+          currentPlayer: currentSign.value
         });
       }
     }
@@ -306,37 +363,37 @@ export default defineComponent({
       if (user) {
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
-        playerId = user.uid;
+        playerId.value = user.uid;
 
         const name = createName();
         playerNameInput.value = name;
 
-        playerRef = storageRef(db, 'players' + playerId);
+        playerRef = storageRef(db, 'players' + playerId.value);
         get(child(playerRef, 'lobbyId')).then((snapshot) => {
           if (snapshot.exists()) {
             lobbyId.value = snapshot.val();
           } else {
             lobbyId.value = route.params.lobbyId.toString()
-            console.log('Joined Lobby ID:', lobbyId.value);
           }
         }).catch((error) => {
           console.error(error);
         }).then(() => {
-          console.log('>>>>>>>>>', lobbyId.value)
-          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/` + playerId)
+          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/` + playerId.value)
           if (Object.keys(players).length === 1) {
             update(playerLobbyRef, {
-              id: playerId,
+              id: playerId.value,
               name: playerNameInput.value,
               sign: 'X',
-              gamesWon: 0
+              gamesWon: 0,
+              color: randomFromArray(playerColors)
             });
           } else {
             update(playerLobbyRef, {
-              id: playerId,
+              id: playerId.value,
               name: playerNameInput.value,
               sign: 'O',
-              gamesWon: 0
+              gamesWon: 0,
+              color: randomFromArray(playerColors)
             });
           }
 
@@ -403,106 +460,154 @@ export default defineComponent({
 
 
     return {
-    currentPlayer,
+    playerId,
+    players,
+    xPlayer,
+    oPlayer,
+    currentSign,
     board,
     winner,
     playerNameInput,
     MakeMove,
     ResetGame,
     changeName,
-    createName,
+    changeColor
     };
   },
 });
 </script>
 
 <style lang="scss" scoped scss>
-.main-container{
-  padding-top: 8px;
-  text-align: center;
-  color: white;
-  min-height: 100vh;
-  .main-container_h1{
-    margin-bottom: 8px;
-    font-size: 30px;
-    line-height: 36px;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-  .main-container_h3 {
-    font-size: 20px;
-    line-height: 28px;
-    margin-bottom: 4px;
-  }
-  .main-container_board {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 8px;
-    .board_div{
-      display: flex;
-      .div_cell{
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid white;
-        width: 80px;
-        height: 80px;
-        cursor: pointer;
+.game-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 20px;
+  .main-container {
+      padding-top: 8px;
+      text-align: center;
+      color: white;
+      min-height: 100vh;
 
-        &:hover{
-          background-color: #86aeff;
+      .main-container_h1 {
+        margin-bottom: 8px;
+        font-size: 30px;
+        line-height: 36px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .main-container_h3 {
+        font-size: 20px;
+        line-height: 28px;
+        margin-bottom: 4px;
+      }
+
+      .main-container_board {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 8px;
+
+        .board_div {
+          display: flex;
+
+          .div_cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid white;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+
+            &:hover {
+              background-color: #86aeff;
+            }
+          }
+        }
+      }
+
+      .main-container_bottom {
+        .bottom_h2 {
+          margin-bottom: 8px;
+          font-size: 60px;
+          line-height: 1;
+        }
+
+        .bottom_resetBtn {
+          margin-top: 20px;
+          font-weight: bold;
         }
       }
     }
-  }
-  .main-container_bottom {
-    .bottom_h2{
-      margin-bottom: 8px;
-      font-size: 60px;
-      line-height: 1;
+
+    .material-symbols-outlined {
+      font-size: 70px;
+      line-height: 70px;
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 48
     }
-    .bottom_resetBtn{
-      background-color: rgb(241, 157, 0);
-      color: white;
+
+    .player-info {
+      padding: 1em;
+      display: flex;
+      gap: 0.5em;
+      align-items: flex-end;
+
+
+      button {
+        font-family: inherit;
+        font-weight: bold;
+        font-size: 14px;
+        height: 44px;
+        border-radius: 4px;
+        outline: 0;
+        padding-left: 0.5em;
+        padding-right: 0.5em;
+        border: 0;
+        cursor: pointer;
+        color: white;
+        border: 1px solid white;
+      }
+
+      button:active {
+        position: relative;
+        top: 1px;
+      }
     }
-  }
-}
-.material-symbols-outlined {
-  font-size: 70px;
-  line-height: 70px;
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 400,
-    'GRAD' 0,
-    'opsz' 48
-}
-.player-info {
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 1em;
-  display: flex;
-  gap: 0.5em;
-  align-items: flex-end;
+
+    .score {
+      margin-top: 40px;
+
+      .score-div {
+        font-size: 20px;
+        line-height: 28px;
+        margin-bottom: 4px;
+      }
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+    }
+
+    input[type='text'],
+
+    input[type='text'] {
+      outline: 0;
+      padding-left: 0.5em;
+      border: 3px solid #222034;
+      width: 150px;
+      text-transform: uppercase;
+    }
+
+    input[type='text']:focus {
+      border-color: #f000ff;
+    }
 }
 
-label {
-  display: block;
-  font-weight: bold;
-}
-
-input[type='text'],
-
-input[type='text'] {
-  outline: 0;
-  padding-left: 0.5em;
-  border: 3px solid #222034;
-  width: 150px;
-  text-transform: uppercase;
-}
-
-input[type='text']:focus {
-  border-color: #f000ff;
-}
 </style>

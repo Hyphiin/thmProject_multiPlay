@@ -12,8 +12,8 @@
     <q-separator />
 
     <q-card-actions class="buttons">
-      <q-btn flat :disable="isFull" @click="$emit('joinGame', lobbyId) ">Join Game</q-btn>
-      <q-btn flat icon="delete" @click="$emit('deleteLobby', lobbyId)" />
+      <q-btn outline color="primary" :disable="isFull" @click="$emit('joinGame', lobbyId) ">Join Game</q-btn>
+      <q-btn flat color="primary" icon="delete" @click="$emit('deleteLobby', lobbyId)" />
     </q-card-actions>
   </q-card>
 </template>

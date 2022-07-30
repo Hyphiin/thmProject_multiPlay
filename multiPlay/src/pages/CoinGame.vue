@@ -1,31 +1,26 @@
 <template>
-  <q-page class="row items-center justify-evenly">
+  <q-page class="column items-center justify-evenly">
     <div ref="gameContainer" class="game-container"></div>
     <div class="player-info">
       <div>
-        <q-input
-          outlined
-          :model-value="playerNameInput"
-          label="Dein Name"
-          bg-color="white"
-          standout="bg-light-green-11 text-black"
-          @update:model-value="(value) => changeName(value)"
-        />
+        <q-input outlined :model-value="playerNameInput" label="Your Name" bg-color="white"
+          standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
       </div>
       <div>
-        <q-btn
-          color="light-green-13"
-          text-color="black"
-          label="Farbe wechseln"
-          @click="changeColor"
-        />
+        <q-btn label="Change Color" :color="currentColor" @click="changeColor" />
+      </div>
+    </div>
+    <div class="score">
+      <h1 class="main-container_h1">SCORES:</h1>
+      <div v-for="player in sortedPlayers" :key="player.id" class="score-div">
+        {{ player.name}}: {{ player.coins}} coins!
       </div>
     </div>
   </q-page>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue';
+import { computed, defineComponent, onMounted, ref } from 'vue';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import {
   getDatabase,
@@ -89,14 +84,33 @@ export default defineComponent({
     const db = getDatabase();
     const route = useRoute()
 
-    let playerId: string;
+    let playerId = ref<string>('');
     let lobbyId = ref<string>('');
     let playerRef: DatabaseReference;
     let playerLobbyRef: DatabaseReference;
-    let players: Players = {};
+    let players = ref<Players>();
     let playerElements: PlayerElements = {};
     let coins: Coins = {};
     let coinElements: CoinElements = {};
+
+    const sortedPlayers = computed(() => {
+      let tempArray: DatabaseEntry[]  = []
+      if(players.value !== undefined){
+        tempArray = Object.values(players.value).sort((a, b) => compare(a, b))
+        console.log(tempArray)
+      }
+      return tempArray
+    })
+
+    function compare(a: DatabaseEntry, b: DatabaseEntry) {
+      if (a.coins > b.coins) {
+        return -1;
+      }
+      if (a.coins < b.coins) {
+        return 1;
+      }
+      return 0;
+    }
 
     onMounted(() => {
       initGame();
@@ -118,12 +132,16 @@ export default defineComponent({
     };
 
     //updates Player Color
+    const currentColor = ref<string>('')
     const changeColor = () => {
-      const mySkinIndex = playerColors.indexOf(players[playerId].color);
-      const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
-      update(playerLobbyRef, {
-        color: nextColor,
-      });
+      if(players.value !== undefined){
+        const mySkinIndex = playerColors.indexOf(players.value[playerId.value].color);
+        const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
+        currentColor.value = nextColor
+        update(playerLobbyRef, {
+          color: nextColor,
+        });
+      }
     };
 
     //place Coin
@@ -145,11 +163,11 @@ export default defineComponent({
     //grab coin
     const attemptGrabCoin = (x: number, y: number) => {
       const key = getKeyString(x, y);
-      if (coins[key]) {
+      if (coins[key] && players.value !== undefined) {
         //remove this key from data, then +1 player coins
         remove(storageRef(db, `lobbys/${lobbyId.value}/coins/${key}`));
         update(playerLobbyRef, {
-          coins: players[playerId].coins + 1,
+          coins: players.value[playerId.value].coins + 1,
         });
       }
     };
@@ -168,23 +186,27 @@ export default defineComponent({
 
       //fires when change occurs
       onValue(allPlayersRef, (snapshot) => {
-        players = snapshot.val() || {};
-        Object.keys(players).forEach((key) => {
-          const characterState = players[key] as DatabaseEntry;
-          let el = playerElements[key];
-          //update the dom
-          if (el instanceof HTMLDivElement) {
-            let temp = el.querySelector('.Character_name') as Element
-            temp.textContent = characterState.name;
-            let temp2 = el.querySelector('.Character_coins') as Element
-            temp2.textContent = characterState.coins.toString();
-            el.setAttribute('data-color', characterState.color);
-            el.setAttribute('data-direction', characterState.direction);
-            const top = 16 * characterState.y - 4 + 'px';
-            const left = 16 * characterState.x + 'px';
-            el.style.transform = `translate3d(${left},${top}, 0)`;
-          }
-        });
+        players.value = snapshot.val() || {};
+        if(players.value !== undefined){
+          Object.keys(players.value).forEach((key) => {
+            if (players.value !== undefined) {
+              const characterState = players.value[key] as DatabaseEntry;
+              let el = playerElements[key];
+              //update the dom
+              if (el instanceof HTMLDivElement) {
+                let temp = el.querySelector('.Character_name') as Element
+                temp.textContent = characterState.name;
+                let temp2 = el.querySelector('.Character_coins') as Element
+                temp2.textContent = characterState.coins.toString();
+                el.setAttribute('data-color', characterState.color);
+                el.setAttribute('data-direction', characterState.direction);
+                const top = 16 * characterState.y - 4 + 'px';
+                const left = 16 * characterState.x + 'px';
+                el.style.transform = `translate3d(${left},${top}, 0)`;
+              }
+            }
+          });
+        }
       });
 
       //fires when a new node is added to the db
@@ -192,7 +214,7 @@ export default defineComponent({
         const addedPlayer = snapshot.val();
         const characterElement = document.createElement('div');
         characterElement.classList.add('Character', 'grid-cell');
-        if (addedPlayer.id === playerId) {
+        if (addedPlayer.id === playerId.value) {
           characterElement.classList.add('you');
         }
         characterElement.innerHTML = `
@@ -273,22 +295,24 @@ export default defineComponent({
     //*****Key Events */
 
     const handleArrowPress = (xChange: number, yChange: number) => {
-      const newX = players[playerId].x + xChange;
-      const newY = players[playerId].y + yChange;
+      if (players.value !== undefined){
+        const newX = players.value[playerId.value].x + xChange;
+        const newY = players.value[playerId.value].y + yChange;
 
-      if (!isSolid(newX, newY)) {
-        //move next space
-        players[playerId].x = newX;
-        players[playerId].y = newY;
-        if (xChange === 1) {
-          players[playerId].direction = 'right';
-        }
-        if (xChange === -1) {
-          players[playerId].direction = 'left';
-        }
-        if (playerLobbyRef) {
-          set(playerLobbyRef, players[playerId]);
-          attemptGrabCoin(newX, newY);
+        if (!isSolid(newX, newY)) {
+          //move next space
+          players.value[playerId.value].x = newX;
+          players.value[playerId.value].y = newY;
+          if (xChange === 1) {
+            players.value[playerId.value].direction = 'right';
+          }
+          if (xChange === -1) {
+            players.value[playerId.value].direction = 'left';
+          }
+          if (playerLobbyRef) {
+            set(playerLobbyRef, players.value[playerId.value]);
+            attemptGrabCoin(newX, newY);
+          }
         }
       }
     };
@@ -314,14 +338,14 @@ export default defineComponent({
       if (user) {
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
-        playerId = user.uid;
+        playerId.value = user.uid;
 
         const name = createName();
         playerNameInput.value = name;
 
         const { x, y } = getRandomSafeSpot();
 
-        playerRef = storageRef(db, 'players' + playerId);
+        playerRef = storageRef(db, 'players' + playerId.value);
         get(child(playerRef, 'lobbyId')).then((snapshot) => {
           if (snapshot.exists()) {
             lobbyId.value = snapshot.val();
@@ -333,16 +357,17 @@ export default defineComponent({
           console.error(error);
         }).then(() => {
           console.log('>>>>>>>>>', lobbyId.value)
-          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/`+playerId)
-
+          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/` + playerId.value)
+          let tempColor = randomFromArray(playerColors) as string
           update(playerLobbyRef, {
             name: playerNameInput.value,
             direction: 'right',
-            color: randomFromArray(playerColors),
+            color: tempColor,
             x,
             y,
             coins: 0,
           });
+          currentColor.value = tempColor
         }
         )
 
@@ -474,7 +499,7 @@ export default defineComponent({
       return temp as Coordinates
     }
 
-    return { gameContainer, playerNameInput, changeColor, changeName };
+    return { gameContainer, playerNameInput, changeColor, changeName, currentColor, sortedPlayers };
   },
 });
 </script>
@@ -508,7 +533,7 @@ input[type='text'],
 button {
   font-family: inherit;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 14px;
   height: 44px;
   border-radius: 4px;
   outline: 0;
@@ -528,13 +553,29 @@ input[type='text']:focus {
 button {
   padding-left: 0.5em;
   padding-right: 0.5em;
-  background: #59ff5a;
   border: 0;
-  border-bottom: 2px solid #1e830b;
   cursor: pointer;
+  color: white;
+  border: 1px solid white;
 }
 button:active {
   position: relative;
   top: 1px;
+}
+.score {
+  margin-top: 40px;
+  color: white
+}
+.main-container_h1 {
+  margin-bottom: 8px;
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.score-div {
+  font-size: 20px;
+  line-height: 28px;
+  margin-bottom: 4px;
 }
 </style>
