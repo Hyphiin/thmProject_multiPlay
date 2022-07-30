@@ -9,13 +9,15 @@
         </div>
         <add-game-card @createGame="openDialog = true" />
       </div>
+      <div class="helperText">Deine gesuchte Lobby taucht nicht auf? Versuch die Seite neu zu laden.</div>
     </div>
 
     <q-dialog v-model="openDialog">
       <q-card>
         <q-card-section class="row items-center">
           <q-form class="q-gutter-md">
-            <q-input filled v-model="lobbyName" label="Name of the Lobby" lazy-rules
+            <q-input filled lazy-rules v-model="lobbyName" label="Name of the Lobby" :error="errorMode"
+              error-message="You need a name for your Lobby!"
               :rules="[ val => val && val.length > 0 || 'Please type something']" />
             <q-select v-model="gamemode" :options="gamesList" label="Gamemode" />
             <q-toggle v-model="closedLobby" color="secondary" label="Make it a private Lobby" />
@@ -25,7 +27,7 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn outline label="Cancel" color="primary" v-close-popup />
-          <q-btn label="Create Game" color="primary" v-close-popup @click="createNewLobby" />
+          <q-btn label="Create Game" color="primary" :disable="errorMode" v-close-popup @click="createNewLobby" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -34,13 +36,14 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-form class="q-gutter-md">
-            <q-input filled v-model="typedPassword" label="Password of the Lobby" lazy-rules
+            <q-input type="password" :error="wrongPassword" error-message="Thats the wrong Password!" filled
+              v-model="typedPassword" label="Password of the Lobby" lazy-rules
               :rules="[ val => val && val.length > 0 || 'Please type something']" />
           </q-form>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn outline label="Cancel" color="primary" v-close-popup />
-          <q-btn label="Join Game" color="primary" v-close-popup @click="checkPassword" />
+          <q-btn label="Join Game" color="primary" :disable="wrongPassword" v-close-popup @click="checkPassword" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -49,7 +52,7 @@
 
 <script lang="ts">
 import { LobbyInterface } from 'src/components/LobbyInterface';
-import { defineComponent, ref } from 'vue';
+import { computed, defineComponent, ref } from 'vue';
 import LobbyCard from '../components/LobbyCard.vue'
 import AddGameCard from '../components/addGameCard.vue'
 import {
@@ -65,7 +68,6 @@ update,
 } from 'firebase/database';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'vue-router';
-
 
 export default defineComponent({
   name: 'MainLobby',
@@ -85,44 +87,58 @@ export default defineComponent({
     let allLobbysRef: DatabaseReference;
     const allLobbysArray = ref<LobbyInterface[]>([])
 
-    const lobbyName = ref<string>('')
+    const lobbyName = ref<string>('My awesome Lobby')
     const lobbyPassword = ref<string>('')
     const gamemode = ref<string>('TicTacToe')
     const gamesList = ref<string[]>(['TicTacToe', 'ConnectFour', 'CoinGame', 'Breakthrough'])
     const closedLobby = ref<boolean>(false)
+    const errorMode = computed(() =>{
+      let tempBool = false
+      if(lobbyName.value === ''){
+        tempBool = true
+      } else {
+        tempBool = false
+      }
+      return tempBool
+    })
 
     const createNewLobby = () => {
-      allLobbysRef = storageRef(db, 'lobbys/' + playerId.value + tempId);
-      set(allLobbysRef, {
-        id: playerId.value + tempId,
-        playerId: playerId.value,
-        lobbyName: lobbyName.value,
-        gamemode: gamemode.value,
-        isPrivate: closedLobby.value,
-        password: lobbyPassword.value
-      });
-      const allPlayers = storageRef(db, `lobbys/${playerId.value + tempId}/players/${playerId.value}`);
-      set(allPlayers, {
-        id: playerId.value,
-      });
+      if(lobbyName.value !== ''){
+        allLobbysRef = storageRef(db, 'lobbys/' + playerId.value + tempId);
+        set(allLobbysRef, {
+          id: playerId.value + tempId,
+          playerId: playerId.value,
+          lobbyName: lobbyName.value,
+          gamemode: gamemode.value,
+          isPrivate: closedLobby.value,
+          password: lobbyPassword.value
+        });
+        const allPlayers = storageRef(db, `lobbys/${playerId.value + tempId}/players/${playerId.value}`);
+        set(allPlayers, {
+          id: playerId.value,
+        });
 
-      update(playerRef, {
-        lobbyId: playerId.value + tempId
-      });
+        update(playerRef, {
+          lobbyId: playerId.value + tempId
+        });
 
 
-      // router.replace({ name: 'CoinGame' });
-      console.log('LOBBYID: ', playerId.value + tempId )
-      router.push({ name: gamemode.value, params: { lobbyId: playerId.value + tempId  }})
+        // router.replace({ name: 'CoinGame' });
+        console.log('LOBBYID: ', playerId.value + tempId )
+        router.push({ name: gamemode.value, params: { lobbyId: playerId.value + tempId  }})
 
-      tempId ++
+        tempId ++
+      } else {
+        openDialog.value = true
+      }
+
     }
 
     onChildAdded(storageRef(db, 'lobbys/'), (snapshot) => {
       const addedLobby = snapshot.val();
       let isFull = false;
 
-      if (Object.keys(addedLobby.players).length >= 2 && addedLobby.gamemode !== "CoinGame"){
+      if (Object.keys(addedLobby.players).length >= 2 && addedLobby.gamemode !== 'CoinGame'){
         isFull = true
       }
       console.log(isFull)
@@ -175,22 +191,30 @@ export default defineComponent({
     const openPWDialog = ref<boolean>(false)
     const typedPassword = ref<string>('');
     const lobbyToJoin = ref<string>('');
-
-    const checkPassword = () =>{
-      openPWDialog.value = false
-
+    const wrongPassword = computed (() => {
+      let tempBool = false
       allLobbysArray.value.forEach(lobby => {
-        console.log("moin")
         if (lobby.lobbyId === lobbyToJoin.value) {
-          console.log("hello")
           if (lobby.password === typedPassword.value) {
-            console.log("test")
-            gamemode.value = lobby.gamemode
-            router.push({ name: gamemode.value, params: { lobbyId: lobbyToJoin.value } })
+            tempBool = false
+          } else {
+            tempBool = true
           }
         }
       })
+      return tempBool
+    })
 
+    const checkPassword = () =>{
+      if (!wrongPassword.value) {
+        allLobbysArray.value.forEach(lobby => {
+          if (lobby.lobbyId === lobbyToJoin.value) {
+            gamemode.value = lobby.gamemode
+            openPWDialog.value = false
+            router.push({ name: gamemode.value, params: { lobbyId: lobbyToJoin.value } })
+          }
+        })
+      }
     }
 
     //*****firebase stuff*****
@@ -259,7 +283,9 @@ export default defineComponent({
       openDialog,
       openPWDialog,
       typedPassword,
-      checkPassword
+      checkPassword,
+      errorMode,
+      wrongPassword
     };
   },
 });
@@ -269,6 +295,15 @@ export default defineComponent({
 .lobby-container{
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  min-height: inherit;
+  .helperText {
+    color: white;
+    font-size: 20px;
+    line-height: 28px;
+    margin-bottom: 4px;
+    margin: 20px;
+  }
 }
 .lobby-div{
   display: flex;
@@ -324,5 +359,7 @@ input[type='text'] {
 input[type='text']:focus {
   border-color: #f2c268;
 }
+
+
 </style>
 
