@@ -247,7 +247,7 @@ export default defineComponent({
           }
         }
       }
-      if (x - 3 <= 5 && y - 3 <= 7) {
+      if (x - 3 >= 0 && y + 3 <= 7) {
         if (board[x][y] === playerSign) {
           if (board[x - 1][y + 1] === playerSign) {
             if (board[x - 2][y + 2] === playerSign) {
