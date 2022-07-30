@@ -9,7 +9,7 @@
         </div>
         <add-game-card @createGame="openDialog = true" />
       </div>
-      <div class="helperText">Deine gesuchte Lobby taucht nicht auf? Versuch die Seite neu zu laden.</div>
+      <div class="helperText">Deine gesuchte Lobby taucht nicht auf? Versuche die Seite neu zu laden.</div>
     </div>
 
     <q-dialog v-model="openDialog">

@@ -31,10 +31,15 @@
           <h2 v-if="winner" class="bottom_h2">Player '{{ winner === 'X' ? xPlayer.name : oPlayer.name }}' wins!</h2>
           <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame">Reset</q-btn>
         </div>
-        <div class="score">
-          <p>SCORES:</p>
-          <p>{{ xPlayer.name}}: {{ xPlayer.gamesWon}}</p>
-          <p>{{ oPlayer.name}}: {{ oPlayer.gamesWon}}</p>
+        <div class="score" v-if="xPlayer.gamesWon >= oPlayer.gamesWon">
+          <h1 class="main-container_h1">SCORES:</h1>
+          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
+          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
+        </div>
+        <div class="score" v-if="xPlayer.gamesWon < oPlayer.gamesWon">
+          <h1 class="main-container_h1">SCORES:</h1>
+          <div class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
+          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
         </div>
       </main>
     </div>
@@ -572,6 +577,16 @@ export default defineComponent({
       button:active {
         position: relative;
         top: 1px;
+      }
+    }
+
+    .score {
+      margin-top: 40px;
+
+      .score-div {
+        font-size: 20px;
+        line-height: 28px;
+        margin-bottom: 4px;
       }
     }
 

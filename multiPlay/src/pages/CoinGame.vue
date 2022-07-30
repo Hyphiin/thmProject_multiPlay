@@ -1,5 +1,5 @@
 <template>
-  <q-page class="row items-center justify-evenly">
+  <q-page class="column items-center justify-evenly">
     <div ref="gameContainer" class="game-container"></div>
     <div class="player-info">
       <div>
@@ -10,11 +10,17 @@
         <q-btn label="Change Color" :color="currentColor" @click="changeColor" />
       </div>
     </div>
+    <div class="score">
+      <h1 class="main-container_h1">SCORES:</h1>
+      <div v-for="player in sortedPlayers" :key="player.id" class="score-div">
+        {{ player.name}}: {{ player.coins}} coins!
+      </div>
+    </div>
   </q-page>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue';
+import { computed, defineComponent, onMounted, ref } from 'vue';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import {
   getDatabase,
@@ -82,10 +88,29 @@ export default defineComponent({
     let lobbyId = ref<string>('');
     let playerRef: DatabaseReference;
     let playerLobbyRef: DatabaseReference;
-    let players: Players = {};
+    let players = ref<Players>();
     let playerElements: PlayerElements = {};
     let coins: Coins = {};
     let coinElements: CoinElements = {};
+
+    const sortedPlayers = computed(() => {
+      let tempArray: DatabaseEntry[]  = []
+      if(players.value !== undefined){
+        tempArray = Object.values(players.value).sort((a, b) => compare(a, b))
+        console.log(tempArray)
+      }
+      return tempArray
+    })
+
+    function compare(a: DatabaseEntry, b: DatabaseEntry) {
+      if (a.coins > b.coins) {
+        return -1;
+      }
+      if (a.coins < b.coins) {
+        return 1;
+      }
+      return 0;
+    }
 
     onMounted(() => {
       initGame();
@@ -109,12 +134,14 @@ export default defineComponent({
     //updates Player Color
     const currentColor = ref<string>('')
     const changeColor = () => {
-      const mySkinIndex = playerColors.indexOf(players[playerId.value].color);
-      const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
-      currentColor.value = nextColor
-      update(playerLobbyRef, {
-        color: nextColor,
-      });
+      if(players.value !== undefined){
+        const mySkinIndex = playerColors.indexOf(players.value[playerId.value].color);
+        const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
+        currentColor.value = nextColor
+        update(playerLobbyRef, {
+          color: nextColor,
+        });
+      }
     };
 
     //place Coin
@@ -136,11 +163,11 @@ export default defineComponent({
     //grab coin
     const attemptGrabCoin = (x: number, y: number) => {
       const key = getKeyString(x, y);
-      if (coins[key]) {
+      if (coins[key] && players.value !== undefined) {
         //remove this key from data, then +1 player coins
         remove(storageRef(db, `lobbys/${lobbyId.value}/coins/${key}`));
         update(playerLobbyRef, {
-          coins: players[playerId.value].coins + 1,
+          coins: players.value[playerId.value].coins + 1,
         });
       }
     };
@@ -159,23 +186,27 @@ export default defineComponent({
 
       //fires when change occurs
       onValue(allPlayersRef, (snapshot) => {
-        players = snapshot.val() || {};
-        Object.keys(players).forEach((key) => {
-          const characterState = players[key] as DatabaseEntry;
-          let el = playerElements[key];
-          //update the dom
-          if (el instanceof HTMLDivElement) {
-            let temp = el.querySelector('.Character_name') as Element
-            temp.textContent = characterState.name;
-            let temp2 = el.querySelector('.Character_coins') as Element
-            temp2.textContent = characterState.coins.toString();
-            el.setAttribute('data-color', characterState.color);
-            el.setAttribute('data-direction', characterState.direction);
-            const top = 16 * characterState.y - 4 + 'px';
-            const left = 16 * characterState.x + 'px';
-            el.style.transform = `translate3d(${left},${top}, 0)`;
-          }
-        });
+        players.value = snapshot.val() || {};
+        if(players.value !== undefined){
+          Object.keys(players.value).forEach((key) => {
+            if (players.value !== undefined) {
+              const characterState = players.value[key] as DatabaseEntry;
+              let el = playerElements[key];
+              //update the dom
+              if (el instanceof HTMLDivElement) {
+                let temp = el.querySelector('.Character_name') as Element
+                temp.textContent = characterState.name;
+                let temp2 = el.querySelector('.Character_coins') as Element
+                temp2.textContent = characterState.coins.toString();
+                el.setAttribute('data-color', characterState.color);
+                el.setAttribute('data-direction', characterState.direction);
+                const top = 16 * characterState.y - 4 + 'px';
+                const left = 16 * characterState.x + 'px';
+                el.style.transform = `translate3d(${left},${top}, 0)`;
+              }
+            }
+          });
+        }
       });
 
       //fires when a new node is added to the db
@@ -264,22 +295,24 @@ export default defineComponent({
     //*****Key Events */
 
     const handleArrowPress = (xChange: number, yChange: number) => {
-      const newX = players[playerId.value].x + xChange;
-      const newY = players[playerId.value].y + yChange;
+      if (players.value !== undefined){
+        const newX = players.value[playerId.value].x + xChange;
+        const newY = players.value[playerId.value].y + yChange;
 
-      if (!isSolid(newX, newY)) {
-        //move next space
-        players[playerId.value].x = newX;
-        players[playerId.value].y = newY;
-        if (xChange === 1) {
-          players[playerId.value].direction = 'right';
-        }
-        if (xChange === -1) {
-          players[playerId.value].direction = 'left';
-        }
-        if (playerLobbyRef) {
-          set(playerLobbyRef, players[playerId.value]);
-          attemptGrabCoin(newX, newY);
+        if (!isSolid(newX, newY)) {
+          //move next space
+          players.value[playerId.value].x = newX;
+          players.value[playerId.value].y = newY;
+          if (xChange === 1) {
+            players.value[playerId.value].direction = 'right';
+          }
+          if (xChange === -1) {
+            players.value[playerId.value].direction = 'left';
+          }
+          if (playerLobbyRef) {
+            set(playerLobbyRef, players.value[playerId.value]);
+            attemptGrabCoin(newX, newY);
+          }
         }
       }
     };
@@ -466,7 +499,7 @@ export default defineComponent({
       return temp as Coordinates
     }
 
-    return { gameContainer, playerNameInput, changeColor, changeName, currentColor };
+    return { gameContainer, playerNameInput, changeColor, changeName, currentColor, sortedPlayers };
   },
 });
 </script>
@@ -528,5 +561,21 @@ button {
 button:active {
   position: relative;
   top: 1px;
+}
+.score {
+  margin-top: 40px;
+  color: white
+}
+.main-container_h1 {
+  margin-bottom: 8px;
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.score-div {
+  font-size: 20px;
+  line-height: 28px;
+  margin-bottom: 4px;
 }
 </style>
