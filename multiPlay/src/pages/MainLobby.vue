@@ -21,13 +21,15 @@
               :rules="[ val => val && val.length > 0 || 'Please type something']" />
             <q-select v-model="gamemode" :options="gamesList" label="Gamemode" />
             <q-toggle v-model="closedLobby" color="secondary" label="Make it a private Lobby" />
-            <q-input v-if="closedLobby" filled v-model="lobbyPassword" label="Password" lazy-rules
-              :rules="[ val => val && val.length >= 0 || 'Please type something']" />
+            <q-input v-if="closedLobby" :error="lobbyPassword === '' ? true : false"
+              error-message="Please choose a Password" type="password" filled v-model="lobbyPassword" label="Password"
+              lazy-rules :rules="[ val => val && val.length >= 0 || 'Please type something']" />
           </q-form>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn outline label="Cancel" color="primary" v-close-popup />
-          <q-btn label="Create Game" color="primary" :disable="errorMode" v-close-popup @click="createNewLobby" />
+          <q-btn label="Create Game" color="primary" :disable="errorMode || (lobbyPassword === '' && closedLobby === true)"
+            v-close-popup @click="createNewLobby" />
         </q-card-actions>
       </q-card>
     </q-dialog>
