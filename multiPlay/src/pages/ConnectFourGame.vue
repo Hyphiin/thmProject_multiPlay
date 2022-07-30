@@ -14,11 +14,14 @@
       <main class="main-container">
         <h1 class="main-container_h1">Connect Four</h1>
 
-        <h3 class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name : oPlayer.name }}'s turn</h3>
+        <h3 v-if="oPlayer.id !== ''" class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name :
+          oPlayer.name }}'s
+          turn</h3>
+        <h3 v-else class="main-container_h3">You need another Player!</h3>
 
         <div class="main-container_board">
           <div v-for="(row, x) in board" :key="x" class="board_div">
-            <div v-for="(cell, y) in row" :key="y" @click="MakeMove(x, y)" class="div_cell">
+            <div v-for="(cell, y) in row" :key="y" @click="oPlayer.id !== '' ? MakeMove(x, y): null" class="div_cell">
               <span class="material-symbols-outlined"
                 :style="cell === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
                 {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
