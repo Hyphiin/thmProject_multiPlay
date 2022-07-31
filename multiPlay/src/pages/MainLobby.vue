@@ -80,7 +80,7 @@ export default defineComponent({
     const router = useRouter();
 
     const openDialog = ref<boolean>(false)
-    let tempId = 1;
+    let tempId = 'Lobby';
 
     const db = getDatabase();
 
@@ -127,12 +127,7 @@ export default defineComponent({
           lobbyId: playerId.value + tempId
         });
 
-
-        // router.replace({ name: 'CoinGame' });
-        console.log('LOBBYID: ', playerId.value + tempId )
         router.push({ name: gamemode.value, params: { lobbyId: playerId.value + tempId  }})
-
-        tempId ++
       } else {
         openDialog.value = true
       }
@@ -148,7 +143,6 @@ export default defineComponent({
       } else if (addedLobby.currentPlayers >= 5 && addedLobby.gamemode === 'CoinGame') {
         isFull = true
       }
-      console.log(isFull)
       allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.currentPlayers, addedLobby.isPrivate, isFull, addedLobby.password))
     })
 
@@ -163,9 +157,8 @@ export default defineComponent({
 
     onValue(storageRef(db, 'lobbys/'), (snapshot) => {
       let allLobbys: object = snapshot.val()
-
         Object.values(allLobbys).forEach(lobby => {
-          if (lobby.id !== undefined || lobby.id !== null || lobby.id !== ''){
+          if (lobby.id !== undefined && lobby.id !== null && lobby.id !== ''){
             let currPlayers = Object.keys(lobby.players).length
             const lobbyRef = storageRef(db, `lobbys/${lobby.id}`);
             update(lobbyRef, {
@@ -205,7 +198,6 @@ export default defineComponent({
 
       // router.replace({ name: 'CoinGame' });
       let goToLobby = true;
-      console.log(allLobbysArray.value)
       allLobbysArray.value.forEach(lobby => {
         if(lobby.lobbyId === lobbyId){
           gamemode.value = lobby.gamemode

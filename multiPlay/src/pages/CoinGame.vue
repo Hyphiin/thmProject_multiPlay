@@ -2,12 +2,17 @@
   <q-page class="column items-center justify-evenly">
     <div ref="gameContainer" class="game-container"></div>
     <div class="player-info">
-      <div>
-        <q-input outlined :model-value="playerNameInput" label="Your Name" bg-color="white"
-          standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+      <div class="info">
+        <div>
+          <q-input outlined :model-value="playerNameInput" label="Your Name" bg-color="white"
+            standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+        </div>
+        <div>
+          <q-btn label="Change Color" :color="currentColor" @click="changeColor" />
+        </div>
       </div>
       <div>
-        <q-btn label="Change Color" :color="currentColor" @click="changeColor" />
+        <q-btn class="goBackBtn" icon="home" @click="goBack"></q-btn>
       </div>
     </div>
     <div class="score">
@@ -98,7 +103,6 @@ export default defineComponent({
       let tempArray: DatabaseEntry[]  = []
       if(players.value !== undefined){
         tempArray = Object.values(players.value).sort((a, b) => compare(a, b))
-        console.log(tempArray)
       }
       return tempArray
     })
@@ -185,6 +189,7 @@ export default defineComponent({
 
       const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
       const allCoinsRef = storageRef(db, `lobbys/${lobbyId.value}/coins`);
+      const currLobbyRef = storageRef(db, `lobbys/${lobbyId.value}`);
 
       //fires when change occurs
       onValue(allPlayersRef, (snapshot) => {
@@ -208,6 +213,12 @@ export default defineComponent({
               }
             }
           });
+          if (Object.keys(players.value).length > 0){
+            update(currLobbyRef, {
+              currentPlayers: Object.keys(players.value).length
+            });
+          }
+
         }
       });
 
@@ -254,12 +265,14 @@ export default defineComponent({
 
       //remove character DOM Element when they leave
       onChildRemoved(allPlayersRef, (snapshot) => {
-        const removedKey = snapshot.val().id;
-        const tempVar = playerElements[removedKey] as HTMLDivElement;
+        const removedPlayer = snapshot.val().id;
+        const tempVar = playerElements[removedPlayer] as HTMLDivElement;
         gameContainer.value?.removeChild(tempVar);
-        delete playerElements[removedKey];
+        delete playerElements[removedPlayer];
         lobbyId.value = ''
-        router.push({ name: 'MainLobby' })
+        if (lobbyId.value.includes(removedPlayer.id)) {
+          router.push({ name: 'MainLobby' })
+        }
       });
 
       onChildAdded(allCoinsRef, (snapshot) => {
@@ -320,6 +333,14 @@ export default defineComponent({
       }
     };
 
+    const goBack = () => {
+      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${playerId.value}`);
+      if (!lobbyId.value.includes(playerId.value)){
+        remove(playerRef)
+        router.push({ name: 'MainLobby' })
+      }
+    }
+
     //*****firebase stuff*****
     const auth = getAuth();
     signInAnonymously(auth)
@@ -354,12 +375,10 @@ export default defineComponent({
             lobbyId.value = snapshot.val();
           } else {
             lobbyId.value = route.params.lobbyId.toString()
-            console.log('Joined Lobby ID:',lobbyId.value);
           }
         }).catch((error) => {
           console.error(error);
         }).then(() => {
-          console.log('>>>>>>>>>', lobbyId.value)
           playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/` + playerId.value)
           let tempColor = randomFromArray(playerColors) as string
           update(playerLobbyRef, {
@@ -502,12 +521,12 @@ export default defineComponent({
       return temp as Coordinates
     }
 
-    return { gameContainer, playerNameInput, changeColor, changeName, currentColor, sortedPlayers };
+    return { gameContainer, playerNameInput, changeColor, changeName, currentColor, sortedPlayers, goBack };
   },
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped scss>
 .game-container {
   position: relative;
   width: 240px;
@@ -518,13 +537,38 @@ export default defineComponent({
 }
 
 .player-info {
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 1em;
   display: flex;
-  gap: 0.5em;
-  align-items: flex-end;
+    flex-direction: row;
+    justify-content: space-between;
+    .info{
+      position: absolute;
+        top: 0;
+        left: 0;
+        padding: 1em;
+        display: flex;
+        gap: 0.5em;
+        align-items: flex-end;
+    }
+    button {
+      font-family: inherit;
+      font-weight: bold;
+      font-size: 14px;
+      height: 44px;
+      border-radius: 4px;
+      outline: 0;
+      padding-left: 0.5em;
+      padding-right: 0.5em;
+      border: 0;
+      cursor: pointer;
+      color: white;
+      border: 1px solid white;
+    }
+
+    button:active {
+      position: relative;
+      top: 1px;
+    }
+
 }
 
 label {

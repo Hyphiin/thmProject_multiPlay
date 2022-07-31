@@ -13,7 +13,7 @@
           </div>
         </div>
         <div>
-          <q-btn v-if="!isStartPage" class="goBackBtn" icon="home" @click="goBack"></q-btn>
+          <q-btn class="goBackBtn" icon="home" @click="goBack"></q-btn>
         </div>
       </div>
       <main class="main-container">
@@ -44,13 +44,17 @@
         </div>
         <div class="score" v-if="xPlayer.gamesWon >= oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
-          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
+          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} {{ xPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
+          </div>
+          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} {{ oPlayer.gamesWon ===
+            1 ? 'win!' : 'wins!' }}</div>
         </div>
         <div class="score" v-if="xPlayer.gamesWon < oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
-          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
+          <div class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} {{ oPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
+          </div>
+          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} {{ xPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
+          </div>
         </div>
       </main>
     </div>
@@ -70,8 +74,9 @@ import {
   update,
   get,
   child,
-  onChildAdded,
+  //onChildAdded,
   onChildRemoved,
+remove,
 } from 'firebase/database';
 import { useRoute, useRouter } from 'vue-router';
 import { Players } from './CoinGame.vue';
@@ -239,6 +244,7 @@ export default defineComponent({
 
         const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
         boardRef = storageRef(db, `lobbys/${lobbyId.value}/board/`);
+        const currLobbyRef = storageRef(db, `lobbys/${lobbyId.value}`);
         currentPlayerRef = storageRef(
           db,
           `lobbys/${lobbyId.value}/currentPlayer/`
@@ -246,7 +252,6 @@ export default defineComponent({
 
         //fires when change occurs
         onValue(allPlayersRef, (snapshot) => {
-          console.log("change")
           players = snapshot.val() || {};
           Object.keys(players).forEach((key) => {
             const characterState = players[key] as unknown as DatabaseEntry;
@@ -264,14 +269,10 @@ export default defineComponent({
               gamesWon: 0,
               color: 'purple'
             }
-            const currLobbyRef = storageRef(db, `lobbys/${lobbyId.value}`);
             update(currLobbyRef, {
               currentPlayers: 1
             });
           }
-
-          console.log("change X", xPlayer.value)
-          console.log("change O", oPlayer.value)
         });
         onValue(boardRef, (snapshot) => {
           if (snapshot.val() != null) {
@@ -284,16 +285,15 @@ export default defineComponent({
           }
         });
         //fires when a new node is added to the db
-        onChildAdded(allPlayersRef, (snapshot) => {
-          const addedPlayer = snapshot.val() as DatabaseEntry;
-          console.log("hello:", addedPlayer)
-          //oPlayer.value = addedPlayer
-        });
+        // onChildAdded(allPlayersRef, (snapshot) => {
+        //   const addedPlayer = snapshot.val() as DatabaseEntry;
+        // });
         //remove character DOM Element when they leave
         onChildRemoved(allPlayersRef, (snapshot) => {
-          const removedKey = snapshot.val();
-          console.log("bye", removedKey)
-          router.push({ name: 'MainLobby'})
+          const removedPlayer = snapshot.val();
+          if (lobbyId.value.includes(removedPlayer.id)){
+            router.push({ name: 'MainLobby' })
+          }
         });
 
         set(boardRef, {
@@ -305,19 +305,10 @@ export default defineComponent({
       }
     };
 
-    const isStartPage = computed(() => {
-      let tempBool = false
-      if (router.currentRoute.value.name === 'MainLobby') {
-        tempBool = true
-      }
-      return tempBool
-    })
-
     const goBack = () => {
-      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players//${lobbyId.value}`);
-      //TODOOOO
-      //playerRef.remove()
-
+      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`);
+      remove(playerRef)
+      ResetGame()
       router.push({ name: 'MainLobby' })
     }
 
@@ -454,7 +445,6 @@ export default defineComponent({
       changeName,
       changeColor,
       playerCurrentColor,
-      isStartPage,
       goBack
     };
   },

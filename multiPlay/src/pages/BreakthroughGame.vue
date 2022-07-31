@@ -2,20 +2,25 @@
   <q-page class="row items-center justify-evenly">
     <div class="game-container">
       <div class="player-info">
-        <div>
-          <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
-            standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+        <div class="info">
+          <div>
+            <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
+              standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+          </div>
+          <div>
+            <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
+              @click="changeColor" />
+          </div>
         </div>
         <div>
-          <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
-            @click="changeColor" />
+          <q-btn class="goBackBtn" icon="home" @click="goBack"></q-btn>
         </div>
       </div>
       <main class="main-container">
         <h1 class="main-container_h1">Breakthrough</h1>
 
         <h3 v-if="oPlayer.id !== ''" class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name :
-        oPlayer.name }}'s
+          oPlayer.name }}'s
           turn</h3>
         <h3 v-else class="main-container_h3">You need another Player!</h3>
 
@@ -64,6 +69,7 @@ import {
   get,
   child,
   onChildRemoved,
+remove,
   // onChildAdded,
 } from 'firebase/database';
 import { useRoute, useRouter } from 'vue-router';
@@ -376,6 +382,7 @@ export default defineComponent({
 
         const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`)
         boardRef = storageRef(db, `lobbys/${lobbyId.value}/board/`);
+        const currLobbyRef = storageRef(db, `lobbys/${lobbyId.value}`);
         currentPlayerRef = storageRef(db, `lobbys/${lobbyId.value}/currentPlayer/`);
 
         //fires when change occurs
@@ -389,6 +396,18 @@ export default defineComponent({
               oPlayer.value = characterState
             }
           })
+          if (Object.keys(players).length === 1) {
+            oPlayer.value = {
+              id: '',
+              name: '',
+              sign: 'O',
+              gamesWon: 0,
+              color: 'purple'
+            }
+            update(currLobbyRef, {
+              currentPlayers: 1
+            });
+          }
         })
         onValue(boardRef, (snapshot) => {
           if (snapshot.val() != null){
@@ -406,8 +425,10 @@ export default defineComponent({
         // })
         //remove character DOM Element when they leave
         onChildRemoved(allPlayersRef, (snapshot) => {
-          //const removedKey = snapshot.val().id;
-          router.push({ name: 'MainLobby' })
+          const removedPlayer = snapshot.val();
+          if (lobbyId.value.includes(removedPlayer.id)) {
+            router.push({ name: 'MainLobby' })
+          }
         });
 
         set(boardRef, {
@@ -419,6 +440,12 @@ export default defineComponent({
       }
     }
 
+    const goBack = () => {
+      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`);
+      remove(playerRef)
+      ResetGame()
+      router.push({ name: 'MainLobby' })
+    }
 
     //*****firebase stuff*****
     const auth = getAuth();
@@ -549,7 +576,8 @@ export default defineComponent({
     MakeMove,
     ResetGame,
     changeName,
-    changeColor
+    changeColor,
+    goBack
     };
   },
 });
@@ -631,30 +659,44 @@ export default defineComponent({
     }
 
     .player-info {
-      padding: 1em;
       display: flex;
-      gap: 0.5em;
-      align-items: flex-end;
+      flex-direction: row;
+      justify-content: space-between;
 
+      .info {
+        padding: 1em;
+        display: flex;
+        gap: 0.5em;
+        align-items: flex-end;
 
-      button {
-        font-family: inherit;
-        font-weight: bold;
-        font-size: 14px;
-        height: 44px;
-        border-radius: 4px;
-        outline: 0;
-        padding-left: 0.5em;
-        padding-right: 0.5em;
-        border: 0;
-        cursor: pointer;
-        color: white;
-        border: 1px solid white;
+        button {
+          font-family: inherit;
+          font-weight: bold;
+          font-size: 14px;
+          height: 44px;
+          border-radius: 4px;
+          outline: 0;
+          padding-left: 0.5em;
+          padding-right: 0.5em;
+          border: 0;
+          cursor: pointer;
+          color: white;
+          border: 1px solid white;
+        }
+
+        button:active {
+          position: relative;
+          top: 1px;
+        }
       }
 
-      button:active {
-        position: relative;
-        top: 1px;
+      .goBackBtn {
+        background-color: rgb(241, 157, 0);
+        color: white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin-right: 20px;
       }
     }
 
