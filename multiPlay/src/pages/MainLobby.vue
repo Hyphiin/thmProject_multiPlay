@@ -136,14 +136,19 @@ export default defineComponent({
 
     onChildAdded(storageRef(db, 'lobbys/'), (snapshot) => {
       const addedLobby = snapshot.val();
-      let isFull = false;
+      if(addedLobby.id === undefined){
+        const currLobbyRef = storageRef(db, `lobbys/${snapshot.key}`);
+        remove(currLobbyRef);
+      } else {
+        let isFull = false;
 
-      if (addedLobby.currentPlayers >= 2 && addedLobby.gamemode !== 'CoinGame'){
-        isFull = true
-      } else if (addedLobby.currentPlayers >= 5 && addedLobby.gamemode === 'CoinGame') {
-        isFull = true
+        if (addedLobby.currentPlayers >= 2 && addedLobby.gamemode !== 'CoinGame') {
+          isFull = true
+        } else if (addedLobby.currentPlayers >= 5 && addedLobby.gamemode === 'CoinGame') {
+          isFull = true
+        }
+        allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.currentPlayers, addedLobby.isPrivate, isFull, addedLobby.password))
       }
-      allLobbysArray.value.push(new LobbyInterface(addedLobby.id, addedLobby.lobbyName, addedLobby.playerId, addedLobby.gamemode, addedLobby.currentPlayers, addedLobby.isPrivate, isFull, addedLobby.password))
     })
 
     onChildRemoved(storageRef(db, 'lobbys/'), (snapshot) => {
