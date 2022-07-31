@@ -8,11 +8,11 @@
             standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
         </div>
         <div>
-          <q-btn label="Change Color" :color="currentColor" @click="changeColor" />
+          <q-btn class="changeColorBtn" label="Change Color" :color="currentColor" @click="changeColor" />
         </div>
-      </div>
-      <div>
-        <q-btn class="goBackBtn" icon="home" @click="goBack"></q-btn>
+        <div class="goBackBtn">
+          <q-btn icon="home" @click="goBack"></q-btn>
+        </div>
       </div>
     </div>
     <div class="score">
@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onMounted, ref } from 'vue';
+import { computed, defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import {
   getDatabase,
@@ -90,6 +90,7 @@ export default defineComponent({
     const route = useRoute();
     const router = useRouter();
 
+
     let playerId = ref<string>('');
     let lobbyId = ref<string>('');
     let playerRef: DatabaseReference;
@@ -118,8 +119,11 @@ export default defineComponent({
     }
 
     onMounted(() => {
+      document.removeEventListener('keydown', () => null);
+      document.removeEventListener('keyup', () => null);
       initGame();
     })
+
 
     // const gameContainer = document.querySelector('.game-container');
     const gameContainer = ref<HTMLElement>();
@@ -178,11 +182,17 @@ export default defineComponent({
       }
     };
 
+    let keyUp: KeyPressListener
+    let keyDown: KeyPressListener
+    let keyRight: KeyPressListener
+    let keyLeft: KeyPressListener
+
     const initGame = () => {
-      new KeyPressListener('ArrowUp', () => handleArrowPress(0, -1));
-      new KeyPressListener('ArrowDown', () => handleArrowPress(0, 1));
-      new KeyPressListener('ArrowRight', () => handleArrowPress(1, 0));
-      new KeyPressListener('ArrowLeft', () => handleArrowPress(-1, 0));
+      keyUp = new KeyPressListener('ArrowUp', () => handleArrowPress(0, -1));
+      keyDown = new KeyPressListener('ArrowDown', () => handleArrowPress(0, 1));
+      keyRight = new KeyPressListener('ArrowRight', () => handleArrowPress(1, 0));
+      keyLeft = new KeyPressListener('ArrowLeft', () => handleArrowPress(-1, 0));
+
 
       if(route.params.lobbyId){
       lobbyId.value = route.params.lobbyId.toString()
@@ -213,12 +223,11 @@ export default defineComponent({
               }
             }
           });
-          if (Object.keys(players.value).length > 0){
+          if (Object.keys(players.value).length > 0 && lobbyId.value.includes(playerId.value)) {
             update(currLobbyRef, {
               currentPlayers: Object.keys(players.value).length
             });
           }
-
         }
       });
 
@@ -265,14 +274,19 @@ export default defineComponent({
 
       //remove character DOM Element when they leave
       onChildRemoved(allPlayersRef, (snapshot) => {
-        const removedPlayer = snapshot.val().id;
-        const tempVar = playerElements[removedPlayer] as HTMLDivElement;
+        const removedPlayerId = snapshot.val().id;
+
+        const tempVar = playerElements[removedPlayerId] as HTMLDivElement;
         gameContainer.value?.removeChild(tempVar);
-        delete playerElements[removedPlayer];
-        lobbyId.value = ''
-        if (lobbyId.value.includes(removedPlayer.id)) {
+        delete playerElements[removedPlayerId];
+        if (lobbyId.value.includes(removedPlayerId)) {
+          keyUp.unbind()
+          keyDown.unbind()
+          keyRight.unbind()
+          keyLeft.unbind()
           router.push({ name: 'MainLobby' })
         }
+        lobbyId.value = ''
       });
 
       onChildAdded(allCoinsRef, (snapshot) => {
@@ -311,6 +325,7 @@ export default defineComponent({
     //*****Key Events */
 
     const handleArrowPress = (xChange: number, yChange: number) => {
+      console.log("handlePress", xChange, yChange)
       if (players.value !== undefined){
         const newX = players.value[playerId.value].x + xChange;
         const newY = players.value[playerId.value].y + yChange;
@@ -335,10 +350,22 @@ export default defineComponent({
 
     const goBack = () => {
       const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${playerId.value}`);
-      if (!lobbyId.value.includes(playerId.value)){
-        remove(playerRef)
-        router.push({ name: 'MainLobby' })
+      remove(playerRef)
+      if(lobbyId.value.includes(playerId.value)){
+        playerId.value = '';
+        lobbyId.value = '';
+        players.value = {};
+        playerElements = {};
+        coins = {};
+        coinElements = {};
+        document.removeEventListener('keydown', () => null );
+        document.removeEventListener('keyup', () => null);
+        keyUp.unbind()
+        keyDown.unbind()
+        keyRight.unbind()
+        keyLeft.unbind()
       }
+      router.push({ name: 'MainLobby' })
     }
 
     //*****firebase stuff*****
@@ -520,7 +547,6 @@ export default defineComponent({
       ]);
       return temp as Coordinates
     }
-
     return { gameContainer, playerNameInput, changeColor, changeName, currentColor, sortedPlayers, goBack };
   },
 });
@@ -529,6 +555,7 @@ export default defineComponent({
 <style lang="scss" scoped scss>
 .game-container {
   position: relative;
+  margin-top: 150px;
   width: 240px;
   height: 208px;
   background: url(../assets/map.png) no-repeat no-repeat;
@@ -538,17 +565,24 @@ export default defineComponent({
 
 .player-info {
   display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    .info{
-      position: absolute;
-        top: 0;
-        left: 0;
-        padding: 1em;
-        display: flex;
-        gap: 0.5em;
-        align-items: flex-end;
+  flex-direction: row;
+  justify-content: space-between;
+  .info{
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 1em;
+    display: flex;
+    gap: 0.5em;
+    align-items: flex-end;
+    width: 100%;
+
+    label {
+      display: block;
+      font-weight: bold;
     }
+
+    input[type='text'],
     button {
       font-family: inherit;
       font-weight: bold;
@@ -556,6 +590,21 @@ export default defineComponent({
       height: 44px;
       border-radius: 4px;
       outline: 0;
+    }
+
+    input[type='text'] {
+      outline: 0;
+      padding-left: 0.5em;
+      border: 3px solid #222034;
+      width: 150px;
+      text-transform: uppercase;
+    }
+
+    input[type='text']:focus {
+      border-color: #f000ff;
+    }
+
+    button {
       padding-left: 0.5em;
       padding-right: 0.5em;
       border: 0;
@@ -568,49 +617,26 @@ export default defineComponent({
       position: relative;
       top: 1px;
     }
+    .goBackBtn {
+      position: absolute;
+      top: 0;
+      right: 0;
+      margin: 1.8em;
+      button {
+        background-color: rgb(241, 157, 0);
+        color: white;
+        border-radius: 50% ;
+        width: 40px;
+        height: 40px ;
+        margin-right: 20px;
+      }
 
-}
+    }
 
-label {
-  display: block;
-  font-weight: bold;
-}
+  }
 
-input[type='text'],
-button {
-  font-family: inherit;
-  font-weight: bold;
-  font-size: 14px;
-  height: 44px;
-  border-radius: 4px;
-  outline: 0;
-}
-
-input[type='text'] {
-  outline: 0;
-  padding-left: 0.5em;
-  border: 3px solid #222034;
-  width: 150px;
-  text-transform: uppercase;
-}
-input[type='text']:focus {
-  border-color: #f000ff;
-}
-
-button {
-  padding-left: 0.5em;
-  padding-right: 0.5em;
-  border: 0;
-  cursor: pointer;
-  color: white;
-  border: 1px solid white;
-}
-button:active {
-  position: relative;
-  top: 1px;
 }
 .score {
-  margin-top: 40px;
   color: white
 }
 .main-container_h1 {
