@@ -2,13 +2,18 @@
   <q-page class="row items-center justify-evenly">
     <div class="game-container">
       <div class="player-info">
-        <div>
-          <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
-            standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+        <div class="info">
+          <div>
+            <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
+              standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+          </div>
+          <div>
+            <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
+              @click="changeColor" />
+          </div>
         </div>
         <div>
-          <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
-            @click="changeColor" />
+          <q-btn class="goBackBtn" icon="home" @click="goBack"></q-btn>
         </div>
       </div>
       <main class="main-container">
@@ -62,10 +67,11 @@ import {
   update,
   get,
   child,
+  onChildRemoved,
+remove,
   // onChildAdded,
-  // onChildRemoved,
 } from 'firebase/database';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Players } from './CoinGame.vue';
 import { computed } from '@vue/reactivity';
 
@@ -86,6 +92,7 @@ export default defineComponent({
     });
     const db = getDatabase();
     const route = useRoute();
+    const router = useRouter();
 
     let playerId = ref<string>('');
     let lobbyId = ref<string>('');
@@ -335,6 +342,7 @@ export default defineComponent({
 
         const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
         boardRef = storageRef(db, `lobbys/${lobbyId.value}/board/`);
+        const currLobbyRef = storageRef(db, `lobbys/${lobbyId.value}`);
         currentPlayerRef = storageRef(
           db,
           `lobbys/${lobbyId.value}/currentPlayer/`
@@ -347,10 +355,22 @@ export default defineComponent({
             const characterState = players[key] as unknown as DatabaseEntry;
             if (characterState.sign === 'X') {
               xPlayer.value = characterState
-            } else {
+            } else if(characterState.sign === 'O'){
               oPlayer.value = characterState
             }
           });
+          if (Object.keys(players).length === 1) {
+            oPlayer.value = {
+              id: '',
+              name: '',
+              sign: 'O',
+              gamesWon: 0,
+              color: 'purple'
+            }
+            update(currLobbyRef, {
+              currentPlayers: 1
+            });
+          }
         });
         onValue(boardRef, (snapshot) => {
           if (snapshot.val() != null) {
@@ -366,10 +386,13 @@ export default defineComponent({
         // onChildAdded(allPlayersRef, (snapshot) => {
         //   const addedPlayer = snapshot.val();
         // });
-        // //remove character DOM Element when they leave
-        // onChildRemoved(allPlayersRef, (snapshot) => {
-        //   const removedKey = snapshot.val().id;
-        // });
+        //remove character DOM Element when they leave
+        onChildRemoved(allPlayersRef, (snapshot) => {
+          const removedPlayer = snapshot.val();
+          if (lobbyId.value.includes(removedPlayer.id)) {
+            router.push({ name: 'MainLobby' })
+          }
+        });
 
         set(boardRef, {
           board: board.value,
@@ -380,6 +403,12 @@ export default defineComponent({
       }
     };
 
+    const goBack = () => {
+      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`);
+      remove(playerRef)
+      ResetGame()
+      router.push({ name: 'MainLobby' })
+    }
 
     //*****firebase stuff*****
     const auth = getAuth();
@@ -513,7 +542,8 @@ export default defineComponent({
       changeName,
       createName,
       changeColor,
-      playerCurrentColor
+      playerCurrentColor,
+      goBack
     };
   },
 });
@@ -591,29 +621,44 @@ export default defineComponent({
   }
 
   .player-info {
-    padding: 1em;
     display: flex;
-    gap: 0.5em;
-    align-items: flex-end;
+    flex-direction: row;
+    justify-content: space-between;
 
-    button {
-      font-family: inherit;
-      font-weight: bold;
-      font-size: 14px;
-      height: 44px;
-      border-radius: 4px;
-      outline: 0;
-      padding-left: 0.5em;
-      padding-right: 0.5em;
-      border: 0;
-      cursor: pointer;
-      color: white;
-      border: 1px solid white;
+    .info {
+      padding: 1em;
+      display: flex;
+      gap: 0.5em;
+      align-items: flex-end;
+
+      button {
+        font-family: inherit;
+        font-weight: bold;
+        font-size: 14px;
+        height: 44px;
+        border-radius: 4px;
+        outline: 0;
+        padding-left: 0.5em;
+        padding-right: 0.5em;
+        border: 0;
+        cursor: pointer;
+        color: white;
+        border: 1px solid white;
+      }
+
+      button:active {
+        position: relative;
+        top: 1px;
+      }
     }
 
-    button:active {
-      position: relative;
-      top: 1px;
+    .goBackBtn {
+      background-color: rgb(241, 157, 0);
+      color: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      margin-right: 20px;
     }
   }
 

@@ -51,7 +51,7 @@ export default defineComponent({
     },
     currentPlayers:{
       type: Number,
-      default: 1
+      required: true
     },
     isPrivate:{
       type: Boolean,
