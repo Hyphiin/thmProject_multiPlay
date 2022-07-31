@@ -584,6 +584,13 @@ export default defineComponent({
       .board_div {
         display: flex;
 
+        @media only screen and (max-width: 600px) {
+          .div_cell {
+            width: 50px !important;
+            height: 50px !important;
+          }
+        }
+
         .div_cell {
           display: flex;
           align-items: center;
@@ -618,6 +625,12 @@ export default defineComponent({
     font-size: 70px;
     line-height: 70px;
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+  }
+  @media only screen and (max-width: 600px) {
+    .material-symbols-outlined {
+    font-size: 40px;
+    line-height: 40px;
+    }
   }
 
   .player-info {

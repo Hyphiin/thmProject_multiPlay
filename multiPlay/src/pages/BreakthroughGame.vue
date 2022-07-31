@@ -20,17 +20,18 @@
         <h1 class="main-container_h1">Breakthrough</h1>
 
         <h3 v-if="oPlayer.id !== ''" class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name :
-          oPlayer.name }}'s
+            oPlayer.name
+        }}'s
           turn</h3>
         <h3 v-else class="main-container_h3">You need another Player!</h3>
 
         <div class="main-container_board">
           <div v-for="(row, x) in board" :key="x" class="board_div">
-            <div v-for="(cell, y) in row" :key="y" @click="oPlayer.id !== '' ? MakeMove(x, y): null" class="div_cell"
+            <div v-for="(cell, y) in row" :key="y" @click="oPlayer.id !== '' ? MakeMove(x, y) : null" class="div_cell"
               :style="[cell.isActiveCell ? 'background-color:#92b6f6' : '', cell.isMoveCell ? 'background-color:#4786f2' : '']">
               <span class="material-symbols-outlined"
                 :style="cell.cellValue === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
-                {{ cell.cellValue === 'X' ? 'Close' : cell.cellValue === 'O' ? 'Circle' : ''}}
+                {{ cell.cellValue === 'X' ? 'Close' : cell.cellValue === 'O' ? 'Circle' : '' }}
               </span>
             </div>
           </div>
@@ -42,13 +43,13 @@
         </div>
         <div class="score" v-if="xPlayer.gamesWon >= oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
-          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
+          <div class="score-div">{{ xPlayer.name }}: {{ xPlayer.gamesWon }} points!</div>
+          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name }}: {{ oPlayer.gamesWon }} points!</div>
         </div>
         <div class="score" v-if="xPlayer.gamesWon < oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
-          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
+          <div class="score-div">{{ oPlayer.name }}: {{ oPlayer.gamesWon }} points!</div>
+          <div class="score-div">{{ xPlayer.name }}: {{ xPlayer.gamesWon }} points!</div>
         </div>
       </main>
     </div>
@@ -69,7 +70,7 @@ import {
   get,
   child,
   onChildRemoved,
-remove,
+  remove,
   // onChildAdded,
 } from 'firebase/database';
 import { useRoute, useRouter } from 'vue-router';
@@ -208,7 +209,7 @@ export default defineComponent({
     const CalculateWinner = (boards: Array<Array<BoardEntry>>) => {
       var winner = ''
 
-      if (checkline(boards, 7,'O') === true) {
+      if (checkline(boards, 7, 'O') === true) {
         winner = 'O'
         return winner
       } else if (checkline(boards, 0, 'X') === true) {
@@ -221,7 +222,7 @@ export default defineComponent({
 
       Object.values(board.value).forEach(cellArray => {
         cellArray.forEach(cell => {
-          if(cell.cellValue === 'X'){
+          if (cell.cellValue === 'X') {
             noX = false
           }
           if (cell.cellValue === 'O') {
@@ -229,7 +230,7 @@ export default defineComponent({
           }
         })
       })
-      if(noX) {
+      if (noX) {
         winner = 'O'
         return winner
       }
@@ -263,94 +264,96 @@ export default defineComponent({
       return tempWinner;
     })
 
-    const checkline = (board: Array<Array<BoardEntry>>, x: number, playerSign: string ) => {
-      for(let i = 0; i <= 7; i++){
-        if(board[x][i].cellValue === playerSign){
+    const checkline = (board: Array<Array<BoardEntry>>, x: number, playerSign: string) => {
+      for (let i = 0; i <= 7; i++) {
+        if (board[x][i].cellValue === playerSign) {
           return true
         }
       }
     }
 
-   const MakeMove = (x: number, y: number) =>  {
+    const MakeMove = (x: number, y: number) => {
       get(child(playerLobbyRef, 'sign')).then((snapshot) => {
         if (snapshot.exists()) {
           if (snapshot.val() === currentSign.value) {
             if (winner.value) return
 
 
-            if (!getPossibleMoves && board.value[x][y].cellValue == currentSign.value){
-              GetMoves(x,y);
-              oldPosition.push([x,y])
+            if (!getPossibleMoves && board.value[x][y].cellValue == currentSign.value) {
+              GetMoves(x, y);
+              oldPosition.push([x, y])
               board.value[x][y].isActiveCell = true
               getPossibleMoves = true
               return
             }
 
-            if(board.value[x][y].isMoveCell === true){
-            moves = []
+            if (board.value[x][y].isMoveCell === true) {
+              moves = []
               board.value[x][y].cellValue = currentSign.value
 
-            board.value[oldPosition[0][0]][oldPosition[0][1]].cellValue = ''
-            moveboard.value = board.value
-            oldPosition = []
-            getPossibleMoves = false
+              board.value[oldPosition[0][0]][oldPosition[0][1]].cellValue = ''
+              moveboard.value = board.value
+              oldPosition = []
+              getPossibleMoves = false
               currentSign.value = currentSign.value === 'X' ? 'O' : 'X'
 
-            Object.values(board.value).forEach(cellArray => {
-              cellArray.forEach(cell => {
-                cell.isActiveCell = false;
-                cell.isMoveCell = false
+              Object.values(board.value).forEach(cellArray => {
+                cellArray.forEach(cell => {
+                  cell.isActiveCell = false;
+                  cell.isMoveCell = false
+                })
               })
-            })
 
-            update(boardRef, {
-              board: board.value
-            });
+              update(boardRef, {
+                board: board.value
+              });
               update(currentPlayerRef, {
                 currentPlayer: currentSign.value
-            });
+              });
+            }
           }
-        }}})
+        }
+      })
     }
 
     const GetMoves = (x: number, y: number) => {
-      if (currentSign.value == 'X'){
-        if(y-1 >= 0 ){
-          if(board.value[x-1][y-1].cellValue != 'X'){
-            moves.push([[x-1, y-1]])
+      if (currentSign.value == 'X') {
+        if (y - 1 >= 0) {
+          if (board.value[x - 1][y - 1].cellValue != 'X') {
+            moves.push([[x - 1, y - 1]])
             board.value[x - 1][y - 1].isMoveCell = true
           }
         }
-          if(board.value[x-1][y].cellValue == ''){
-            moves.push([[x-1, y]])
-            board.value[x - 1][y].isMoveCell = true
-          }
-        if(y+1 <= 7 ){
-          if(board.value[x-1][y+1].cellValue != 'X'){
-            moves.push([[x-1, y+1]])
+        if (board.value[x - 1][y].cellValue == '') {
+          moves.push([[x - 1, y]])
+          board.value[x - 1][y].isMoveCell = true
+        }
+        if (y + 1 <= 7) {
+          if (board.value[x - 1][y + 1].cellValue != 'X') {
+            moves.push([[x - 1, y + 1]])
             board.value[x - 1][y + 1].isMoveCell = true
           }
         }
       }
-      if (currentSign.value == 'O'){
-        if(y-1 >= 0 ){
-          if(board.value[x+1][y-1].cellValue != 'O'){
-            moves.push([[x+1, y-1]])
+      if (currentSign.value == 'O') {
+        if (y - 1 >= 0) {
+          if (board.value[x + 1][y - 1].cellValue != 'O') {
+            moves.push([[x + 1, y - 1]])
             board.value[x + 1][y - 1].isMoveCell = true
           }
         }
-          if(board.value[x+1][y].cellValue == ''){
-            moves.push([[x+1, y]])
-            board.value[x + 1][y].isMoveCell = true
-          }
-        if(y+1 <= 7 ){
-          if(board.value[x+1][y+1].cellValue != 'O'){
-            moves.push([[x+1, y+1]])
+        if (board.value[x + 1][y].cellValue == '') {
+          moves.push([[x + 1, y]])
+          board.value[x + 1][y].isMoveCell = true
+        }
+        if (y + 1 <= 7) {
+          if (board.value[x + 1][y + 1].cellValue != 'O') {
+            moves.push([[x + 1, y + 1]])
             board.value[x + 1][y + 1].isMoveCell = true
           }
         }
       }
-      moves.forEach((move)  => {
+      moves.forEach((move) => {
         moveboard.value[move[0][0]][move[0][1]].cellValue = 'P'
       }
       )
@@ -392,7 +395,7 @@ export default defineComponent({
             const characterState = players[key] as unknown as DatabaseEntry
             if (characterState.sign === 'X') {
               xPlayer.value = characterState
-            } else if(characterState.sign === 'O') {
+            } else if (characterState.sign === 'O') {
               oPlayer.value = characterState
             }
           })
@@ -410,7 +413,7 @@ export default defineComponent({
           }
         })
         onValue(boardRef, (snapshot) => {
-          if (snapshot.val() != null){
+          if (snapshot.val() != null) {
             board.value = snapshot.val().board
           }
         })
@@ -458,13 +461,13 @@ export default defineComponent({
         const errorMessage = error.message;
         console.log(
           'So sorry, something went wrong! errorCode: ' +
-            errorCode +
-            ' | errorMessage: ' +
-            errorMessage
+          errorCode +
+          ' | errorMessage: ' +
+          errorMessage
         );
       });
 
-     onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, (user) => {
       if (user) {
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
@@ -565,19 +568,19 @@ export default defineComponent({
 
 
     return {
-    playerId,
-    players,
-    xPlayer,
-    oPlayer,
-    currentSign,
-    board,
-    winner,
-    playerNameInput,
-    MakeMove,
-    ResetGame,
-    changeName,
-    changeColor,
-    goBack
+      playerId,
+      players,
+      xPlayer,
+      oPlayer,
+      currentSign,
+      board,
+      winner,
+      playerNameInput,
+      MakeMove,
+      ResetGame,
+      changeName,
+      changeColor,
+      goBack
     };
   },
 });
@@ -589,145 +592,158 @@ export default defineComponent({
   flex-direction: column;
   width: 100%;
   margin-top: 20px;
+
   .main-container {
-      padding-top: 8px;
-      text-align: center;
-      color: white;
-      min-height: 100vh;
+    padding-top: 8px;
+    text-align: center;
+    color: white;
+    min-height: 100vh;
 
-      .main-container_h1 {
-        margin-bottom: 8px;
-        font-size: 30px;
-        line-height: 36px;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      .main-container_h3 {
-        font-size: 20px;
-        line-height: 28px;
-        margin-bottom: 4px;
-      }
-
-      .main-container_board {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-bottom: 8px;
-
-        .board_div {
-          display: flex;
-
-          .div_cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid white;
-            width: 80px;
-            height: 80px;
-            cursor: pointer;
-
-            &:hover {
-              background-color: #86aeff;
-            }
-          }
-        }
-      }
-
-      .main-container_bottom {
-        .bottom_h2 {
-          margin-bottom: 8px;
-          font-size: 60px;
-          line-height: 1;
-        }
-
-        .bottom_resetBtn {
-          margin-top: 20px;
-          font-weight: bold;
-        }
-      }
-    }
-
-    .material-symbols-outlined {
-      font-size: 70px;
-      line-height: 70px;
-      font-variation-settings:
-        'FILL' 0,
-        'wght' 400,
-        'GRAD' 0,
-        'opsz' 48
-    }
-
-    .player-info {
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-
-      .info {
-        padding: 1em;
-        display: flex;
-        gap: 0.5em;
-        align-items: flex-end;
-
-        button {
-          font-family: inherit;
-          font-weight: bold;
-          font-size: 14px;
-          height: 44px;
-          border-radius: 4px;
-          outline: 0;
-          padding-left: 0.5em;
-          padding-right: 0.5em;
-          border: 0;
-          cursor: pointer;
-          color: white;
-          border: 1px solid white;
-        }
-
-        button:active {
-          position: relative;
-          top: 1px;
-        }
-      }
-
-      .goBackBtn {
-        background-color: rgb(241, 157, 0);
-        color: white;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        margin-right: 20px;
-      }
-    }
-
-    .score {
-      margin-top: 40px;
-
-      .score-div {
-        font-size: 20px;
-        line-height: 28px;
-        margin-bottom: 4px;
-      }
-    }
-
-    label {
-      display: block;
-      font-weight: bold;
-    }
-
-    input[type='text'],
-
-    input[type='text'] {
-      outline: 0;
-      padding-left: 0.5em;
-      border: 3px solid #222034;
-      width: 150px;
+    .main-container_h1 {
+      margin-bottom: 8px;
+      font-size: 30px;
+      line-height: 36px;
+      font-weight: 700;
       text-transform: uppercase;
     }
 
-    input[type='text']:focus {
-      border-color: #f000ff;
+    .main-container_h3 {
+      font-size: 20px;
+      line-height: 28px;
+      margin-bottom: 4px;
     }
-}
 
+    .main-container_board {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 8px;
+
+      .board_div {
+        display: flex;
+
+        @media only screen and (max-width: 600px) {
+          .div_cell {
+            width: 50px !important;
+            height: 50px !important;
+          }
+        }
+
+        .div_cell {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid white;
+          width: 80px;
+          height: 80px;
+          cursor: pointer;
+
+          &:hover {
+            background-color: #86aeff;
+          }
+        }
+      }
+    }
+
+    .main-container_bottom {
+      .bottom_h2 {
+        margin-bottom: 8px;
+        font-size: 60px;
+        line-height: 1;
+      }
+
+      .bottom_resetBtn {
+        margin-top: 20px;
+        font-weight: bold;
+      }
+    }
+  }
+
+  .material-symbols-outlined {
+    font-size: 70px;
+    line-height: 70px;
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 48
+  }
+  @media only screen and (max-width: 600px) {
+    .material-symbols-outlined {
+    font-size: 40px;
+    line-height: 40px;
+    }
+  }
+
+  .player-info {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    .info {
+      padding: 1em;
+      display: flex;
+      gap: 0.5em;
+      align-items: flex-end;
+
+      button {
+        font-family: inherit;
+        font-weight: bold;
+        font-size: 14px;
+        height: 44px;
+        border-radius: 4px;
+        outline: 0;
+        padding-left: 0.5em;
+        padding-right: 0.5em;
+        border: 0;
+        cursor: pointer;
+        color: white;
+        border: 1px solid white;
+      }
+
+      button:active {
+        position: relative;
+        top: 1px;
+      }
+    }
+
+    .goBackBtn {
+      background-color: rgb(241, 157, 0);
+      color: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      margin-right: 20px;
+    }
+  }
+
+  .score {
+    margin-top: 40px;
+
+    .score-div {
+      font-size: 20px;
+      line-height: 28px;
+      margin-bottom: 4px;
+    }
+  }
+
+  label {
+    display: block;
+    font-weight: bold;
+  }
+
+  input[type='text'],
+
+  input[type='text'] {
+    outline: 0;
+    padding-left: 0.5em;
+    border: 3px solid #222034;
+    width: 150px;
+    text-transform: uppercase;
+  }
+
+  input[type='text']:focus {
+    border-color: #f000ff;
+  }
+}
 </style>
