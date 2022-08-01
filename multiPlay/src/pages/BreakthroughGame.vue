@@ -4,12 +4,21 @@
       <div class="player-info">
         <div class="info">
           <div>
-            <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
-              standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+            <q-input
+              outlined
+              :model-value="playerNameInput"
+              label="Dein Name"
+              bg-color="white"
+              standout="bg-orange-2 text-black"
+              @update:model-value="(value) => changeName(value)"
+            />
           </div>
           <div>
-            <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
-              @click="changeColor" />
+            <q-btn
+              :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color"
+              label="Change color"
+              @click="changeColor"
+            />
           </div>
         </div>
         <div>
@@ -19,37 +28,68 @@
       <main class="main-container">
         <h1 class="main-container_h1">Breakthrough</h1>
 
-        <h3 v-if="oPlayer.id !== ''" class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name :
-            oPlayer.name
-        }}'s
-          turn</h3>
+        <h3 v-if="oPlayer.id !== ''" class="main-container_h3">
+          Player {{ currentSign === 'X' ? xPlayer.name : oPlayer.name }}'s turn
+        </h3>
         <h3 v-else class="main-container_h3">You need another Player!</h3>
 
         <div class="main-container_board">
           <div v-for="(row, x) in board" :key="x" class="board_div">
-            <div v-for="(cell, y) in row" :key="y" @click="oPlayer.id !== '' ? MakeMove(x, y) : null" class="div_cell"
-              :style="[cell.isActiveCell ? 'background-color:#92b6f6' : '', cell.isMoveCell ? 'background-color:#4786f2' : '']">
-              <span class="material-symbols-outlined"
-                :style="cell.cellValue === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
-                {{ cell.cellValue === 'X' ? 'Close' : cell.cellValue === 'O' ? 'Circle' : '' }}
+            <div
+              v-for="(cell, y) in row"
+              :key="y"
+              @click="oPlayer.id !== '' ? MakeMove(x, y) : null"
+              class="div_cell"
+              :style="[
+                cell.isActiveCell ? 'background-color:#92b6f6' : '',
+                cell.isMoveCell ? 'background-color:#4786f2' : '',
+              ]"
+            >
+              <span
+                class="material-symbols-outlined"
+                :style="
+                  cell.cellValue === 'X'
+                    ? 'color:' + xPlayer.color
+                    : 'color:' + oPlayer.color
+                "
+              >
+                {{
+                  cell.cellValue === 'X'
+                    ? 'Close'
+                    : cell.cellValue === 'O'
+                    ? 'Circle'
+                    : ''
+                }}
               </span>
             </div>
           </div>
         </div>
 
         <div class="main-container_bottom">
-          <h2 v-if="winner" class="bottom_h2">Player '{{ winner === 'X' ? xPlayer.name : oPlayer.name }}' wins!</h2>
-          <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame">Reset</q-btn>
+          <h2 v-if="winner" class="bottom_h2">
+            Player '{{ winner === 'X' ? xPlayer.name : oPlayer.name }}' wins!
+          </h2>
+          <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame"
+            >Reset</q-btn
+          >
         </div>
         <div class="score" v-if="xPlayer.gamesWon >= oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ xPlayer.name }}: {{ xPlayer.gamesWon }} points!</div>
-          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name }}: {{ oPlayer.gamesWon }} points!</div>
+          <div class="score-div">
+            {{ xPlayer.name }}: {{ xPlayer.gamesWon }} points!
+          </div>
+          <div v-if="oPlayer.id !== ''" class="score-div">
+            {{ oPlayer.name }}: {{ oPlayer.gamesWon }} points!
+          </div>
         </div>
         <div class="score" v-if="xPlayer.gamesWon < oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ oPlayer.name }}: {{ oPlayer.gamesWon }} points!</div>
-          <div class="score-div">{{ xPlayer.name }}: {{ xPlayer.gamesWon }} points!</div>
+          <div class="score-div">
+            {{ oPlayer.name }}: {{ oPlayer.gamesWon }} points!
+          </div>
+          <div class="score-div">
+            {{ xPlayer.name }}: {{ xPlayer.gamesWon }} points!
+          </div>
         </div>
       </main>
     </div>
@@ -99,7 +139,7 @@ export default defineComponent({
       initGame();
     });
     const db = getDatabase();
-    const route = useRoute()
+    const route = useRoute();
     const router = useRouter();
 
     let playerId = ref<string>('');
@@ -108,16 +148,15 @@ export default defineComponent({
     let boardRef: DatabaseReference;
     let playerLobbyRef: DatabaseReference;
     let players: Players = {};
-    var getPossibleMoves = false
-    var oldPosition: any[] = []
-    var moves: any[] = []
-
+    var getPossibleMoves = false;
+    var oldPosition: any[] = [];
+    var moves: any[] = [];
 
     //updates Player Name
     const playerNameInput = ref<string>();
     const changeName = (newValue: string | number | null) => {
       if (typeof newValue === 'string') {
-        playerNameInput.value = newValue
+        playerNameInput.value = newValue;
         update(playerLobbyRef, {
           name: newValue,
         });
@@ -129,20 +168,20 @@ export default defineComponent({
     const changeColor = () => {
       const myColorIndex = playerColors.indexOf(players[playerId.value].color);
       const nextColor = playerColors[myColorIndex + 1] || playerColors[0];
-      playerCurrentColor.value = nextColor
+      playerCurrentColor.value = nextColor;
       update(playerLobbyRef, {
         color: nextColor,
       });
     };
 
-    const currentSign = ref<string>('X')
+    const currentSign = ref<string>('X');
 
     const xPlayer = ref<DatabaseEntry>({
       id: '',
       name: '',
       sign: 'X',
       gamesWon: 0,
-      color: 'orange'
+      color: 'orange',
     });
 
     const oPlayer = ref<DatabaseEntry>({
@@ -150,7 +189,7 @@ export default defineComponent({
       name: '',
       sign: 'O',
       gamesWon: 0,
-      color: 'purple'
+      color: 'purple',
     });
 
     const oBoardArray: BoardEntry[] = [
@@ -162,7 +201,7 @@ export default defineComponent({
       { cellValue: 'O', isActiveCell: false, isMoveCell: false },
       { cellValue: 'O', isActiveCell: false, isMoveCell: false },
       { cellValue: 'O', isActiveCell: false, isMoveCell: false },
-    ]
+    ];
     const xBoardArray: BoardEntry[] = [
       { cellValue: 'X', isActiveCell: false, isMoveCell: false },
       { cellValue: 'X', isActiveCell: false, isMoveCell: false },
@@ -172,7 +211,7 @@ export default defineComponent({
       { cellValue: 'X', isActiveCell: false, isMoveCell: false },
       { cellValue: 'X', isActiveCell: false, isMoveCell: false },
       { cellValue: 'X', isActiveCell: false, isMoveCell: false },
-    ]
+    ];
     const neutalBoardArray: BoardEntry[] = [
       { cellValue: '', isActiveCell: false, isMoveCell: false },
       { cellValue: '', isActiveCell: false, isMoveCell: false },
@@ -182,7 +221,7 @@ export default defineComponent({
       { cellValue: '', isActiveCell: false, isMoveCell: false },
       { cellValue: '', isActiveCell: false, isMoveCell: false },
       { cellValue: '', isActiveCell: false, isMoveCell: false },
-    ]
+    ];
 
     let currentPlayerRef: DatabaseReference;
     const board = ref<Array<BoardEntry[]>>([
@@ -207,43 +246,43 @@ export default defineComponent({
     ]);
 
     const CalculateWinner = (boards: Array<Array<BoardEntry>>) => {
-      var winner = ''
+      var winner = '';
 
       if (checkline(boards, 7, 'O') === true) {
-        winner = 'O'
-        return winner
+        winner = 'O';
+        return winner;
       } else if (checkline(boards, 0, 'X') === true) {
-        winner = 'X'
-        return winner
+        winner = 'X';
+        return winner;
       }
 
       var noX = true;
-      var noO = true
+      var noO = true;
 
-      Object.values(board.value).forEach(cellArray => {
-        cellArray.forEach(cell => {
+      Object.values(board.value).forEach((cellArray) => {
+        cellArray.forEach((cell) => {
           if (cell.cellValue === 'X') {
-            noX = false
+            noX = false;
           }
           if (cell.cellValue === 'O') {
-            noO = false
+            noO = false;
           }
-        })
-      })
+        });
+      });
       if (noX) {
-        winner = 'O'
-        return winner
+        winner = 'O';
+        return winner;
       }
       if (noO) {
-        winner = 'X'
-        return winner
+        winner = 'X';
+        return winner;
       }
 
-      return null
-    }
+      return null;
+    };
 
     const winner = computed(() => {
-      let tempWinner = CalculateWinner(board.value)
+      let tempWinner = CalculateWinner(board.value);
       if (tempWinner === 'X') {
         const winningPlayerRef = storageRef(
           db,
@@ -262,102 +301,107 @@ export default defineComponent({
         });
       }
       return tempWinner;
-    })
+    });
 
-    const checkline = (board: Array<Array<BoardEntry>>, x: number, playerSign: string) => {
+    const checkline = (
+      board: Array<Array<BoardEntry>>,
+      x: number,
+      playerSign: string
+    ) => {
       for (let i = 0; i <= 7; i++) {
         if (board[x][i].cellValue === playerSign) {
-          return true
+          return true;
         }
       }
-    }
+    };
 
     const MakeMove = (x: number, y: number) => {
       get(child(playerLobbyRef, 'sign')).then((snapshot) => {
         if (snapshot.exists()) {
           if (snapshot.val() === currentSign.value) {
-            if (winner.value) return
+            if (winner.value) return;
 
-
-            if (!getPossibleMoves && board.value[x][y].cellValue == currentSign.value) {
+            if (
+              !getPossibleMoves &&
+              board.value[x][y].cellValue == currentSign.value
+            ) {
               GetMoves(x, y);
-              oldPosition.push([x, y])
-              board.value[x][y].isActiveCell = true
-              getPossibleMoves = true
-              return
+              oldPosition.push([x, y]);
+              board.value[x][y].isActiveCell = true;
+              getPossibleMoves = true;
+              return;
             }
 
             if (board.value[x][y].isMoveCell === true) {
-              moves = []
-              board.value[x][y].cellValue = currentSign.value
+              moves = [];
+              board.value[x][y].cellValue = currentSign.value;
 
-              board.value[oldPosition[0][0]][oldPosition[0][1]].cellValue = ''
-              moveboard.value = board.value
-              oldPosition = []
-              getPossibleMoves = false
-              currentSign.value = currentSign.value === 'X' ? 'O' : 'X'
+              board.value[oldPosition[0][0]][oldPosition[0][1]].cellValue = '';
+              moveboard.value = board.value;
+              oldPosition = [];
+              getPossibleMoves = false;
+              currentSign.value = currentSign.value === 'X' ? 'O' : 'X';
 
-              Object.values(board.value).forEach(cellArray => {
-                cellArray.forEach(cell => {
+              Object.values(board.value).forEach((cellArray) => {
+                cellArray.forEach((cell) => {
                   cell.isActiveCell = false;
-                  cell.isMoveCell = false
-                })
-              })
+                  cell.isMoveCell = false;
+                });
+              });
 
               update(boardRef, {
-                board: board.value
+                board: board.value,
               });
               update(currentPlayerRef, {
-                currentPlayer: currentSign.value
+                currentPlayer: currentSign.value,
               });
             }
           }
         }
-      })
-    }
+      });
+    };
 
     const GetMoves = (x: number, y: number) => {
       if (currentSign.value == 'X') {
         if (y - 1 >= 0) {
           if (board.value[x - 1][y - 1].cellValue != 'X') {
-            moves.push([[x - 1, y - 1]])
-            board.value[x - 1][y - 1].isMoveCell = true
+            moves.push([[x - 1, y - 1]]);
+            board.value[x - 1][y - 1].isMoveCell = true;
           }
         }
         if (board.value[x - 1][y].cellValue == '') {
-          moves.push([[x - 1, y]])
-          board.value[x - 1][y].isMoveCell = true
+          moves.push([[x - 1, y]]);
+          board.value[x - 1][y].isMoveCell = true;
         }
         if (y + 1 <= 7) {
           if (board.value[x - 1][y + 1].cellValue != 'X') {
-            moves.push([[x - 1, y + 1]])
-            board.value[x - 1][y + 1].isMoveCell = true
+            moves.push([[x - 1, y + 1]]);
+            board.value[x - 1][y + 1].isMoveCell = true;
           }
         }
       }
       if (currentSign.value == 'O') {
         if (y - 1 >= 0) {
           if (board.value[x + 1][y - 1].cellValue != 'O') {
-            moves.push([[x + 1, y - 1]])
-            board.value[x + 1][y - 1].isMoveCell = true
+            moves.push([[x + 1, y - 1]]);
+            board.value[x + 1][y - 1].isMoveCell = true;
           }
         }
         if (board.value[x + 1][y].cellValue == '') {
-          moves.push([[x + 1, y]])
-          board.value[x + 1][y].isMoveCell = true
+          moves.push([[x + 1, y]]);
+          board.value[x + 1][y].isMoveCell = true;
         }
         if (y + 1 <= 7) {
           if (board.value[x + 1][y + 1].cellValue != 'O') {
-            moves.push([[x + 1, y + 1]])
-            board.value[x + 1][y + 1].isMoveCell = true
+            moves.push([[x + 1, y + 1]]);
+            board.value[x + 1][y + 1].isMoveCell = true;
           }
         }
       }
       moves.forEach((move) => {
-        moveboard.value[move[0][0]][move[0][1]].cellValue = 'P'
-      }
-      )
-    }
+        moveboard.value[move[0][0]][move[0][1]].cellValue = 'P';
+      });
+    };
 
     const ResetGame = () => {
       board.value = [
@@ -369,59 +413,62 @@ export default defineComponent({
         neutalBoardArray,
         xBoardArray,
         xBoardArray,
-      ]
-      currentSign.value = 'X'
+      ];
+      currentSign.value = 'X';
       set(boardRef, {
         board: board.value,
       });
       set(currentPlayerRef, {
         currentPlayer: currentSign.value,
       });
-    }
+    };
 
     const initGame = () => {
       if (route.params.lobbyId) {
-        lobbyId.value = route.params.lobbyId.toString()
+        lobbyId.value = route.params.lobbyId.toString();
 
-        const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`)
+        const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
         boardRef = storageRef(db, `lobbys/${lobbyId.value}/board/`);
         const currLobbyRef = storageRef(db, `lobbys/${lobbyId.value}`);
-        currentPlayerRef = storageRef(db, `lobbys/${lobbyId.value}/currentPlayer/`);
+        currentPlayerRef = storageRef(
+          db,
+          `lobbys/${lobbyId.value}/currentPlayer/`
+        );
 
         //fires when change occurs
         onValue(allPlayersRef, (snapshot) => {
-          players = snapshot.val() || {}
+          players = snapshot.val() || {};
           Object.keys(players).forEach((key) => {
-            const characterState = players[key] as unknown as DatabaseEntry
+            const characterState = players[key] as unknown as DatabaseEntry;
             if (characterState.sign === 'X') {
-              xPlayer.value = characterState
+              xPlayer.value = characterState;
             } else if (characterState.sign === 'O') {
-              oPlayer.value = characterState
+              oPlayer.value = characterState;
             }
-          })
+          });
           if (Object.keys(players).length === 1) {
             oPlayer.value = {
               id: '',
               name: '',
               sign: 'O',
               gamesWon: 0,
-              color: 'purple'
-            }
+              color: 'purple',
+            };
             update(currLobbyRef, {
-              currentPlayers: 1
+              currentPlayers: 1,
             });
           }
-        })
+        });
         onValue(boardRef, (snapshot) => {
           if (snapshot.val() != null) {
-            board.value = snapshot.val().board
+            board.value = snapshot.val().board;
           }
-        })
+        });
         onValue(currentPlayerRef, (snapshot) => {
           if (snapshot.val() != null) {
-            currentSign.value = snapshot.val().currentPlayer
+            currentSign.value = snapshot.val().currentPlayer;
           }
-        })
+        });
         // //fires when a new node is added to the db
         // onChildAdded(allPlayersRef, (snapshot) => {
         //   const addedPlayer = snapshot.val()
@@ -430,25 +477,28 @@ export default defineComponent({
         onChildRemoved(allPlayersRef, (snapshot) => {
           const removedPlayer = snapshot.val();
           if (lobbyId.value.includes(removedPlayer.id)) {
-            router.push({ name: 'MainLobby' })
+            router.push({ name: 'MainLobby' });
           }
         });
 
         set(boardRef, {
-          board: board.value
+          board: board.value,
         });
         set(currentPlayerRef, {
-          currentPlayer: currentSign.value
+          currentPlayer: currentSign.value,
         });
       }
-    }
+    };
 
     const goBack = () => {
-      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`);
-      remove(playerRef)
-      ResetGame()
-      router.push({ name: 'MainLobby' })
-    }
+      const playerRef = storageRef(
+        db,
+        `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`
+      );
+      remove(playerRef);
+      ResetGame();
+      router.push({ name: 'MainLobby' });
+    };
 
     //*****firebase stuff*****
     const auth = getAuth();
@@ -461,9 +511,9 @@ export default defineComponent({
         const errorMessage = error.message;
         console.log(
           'So sorry, something went wrong! errorCode: ' +
-          errorCode +
-          ' | errorMessage: ' +
-          errorMessage
+            errorCode +
+            ' | errorMessage: ' +
+            errorMessage
         );
       });
 
@@ -477,41 +527,44 @@ export default defineComponent({
         playerNameInput.value = name;
 
         playerRef = storageRef(db, 'players' + playerId.value);
-        get(child(playerRef, 'lobbyId')).then((snapshot) => {
-          if (snapshot.exists()) {
-            lobbyId.value = snapshot.val();
-          } else {
-            lobbyId.value = route.params.lobbyId.toString()
-          }
-        }).catch((error) => {
-          console.error(error);
-        }).then(() => {
-          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/` + playerId.value)
-          if (Object.keys(players).length === 1) {
-            update(playerLobbyRef, {
-              id: playerId.value,
-              name: playerNameInput.value,
-              sign: 'X',
-              gamesWon: 0,
-              color: randomFromArray(playerColors)
-            });
-          } else {
-            update(playerLobbyRef, {
-              id: playerId.value,
-              name: playerNameInput.value,
-              sign: 'O',
-              gamesWon: 0,
-              color: randomFromArray(playerColors)
-            });
-          }
-
-        }
-        )
+        get(child(playerRef, 'lobbyId'))
+          .then((snapshot) => {
+            if (snapshot.exists()) {
+              lobbyId.value = snapshot.val();
+            } else {
+              lobbyId.value = route.params.lobbyId.toString();
+            }
+          })
+          .catch((error) => {
+            console.error(error);
+          })
+          .then(() => {
+            playerLobbyRef = storageRef(
+              db,
+              `lobbys/${lobbyId.value}/players/` + playerId.value
+            );
+            if (Object.keys(players).length === 1) {
+              update(playerLobbyRef, {
+                id: playerId.value,
+                name: playerNameInput.value,
+                sign: 'X',
+                gamesWon: 0,
+                color: randomFromArray(playerColors),
+              });
+            } else {
+              update(playerLobbyRef, {
+                id: playerId.value,
+                name: playerNameInput.value,
+                sign: 'O',
+                gamesWon: 0,
+                color: randomFromArray(playerColors),
+              });
+            }
+          });
 
         //remove Player from Firebase, when disconnect
         onDisconnect(playerRef).remove();
         onDisconnect(playerLobbyRef).remove();
-
       } else {
         // User is signed out
         // ...
@@ -566,7 +619,6 @@ export default defineComponent({
     // Options for Player Colors... these are in the same order as our sprite sheet
     const playerColors = ['blue', 'red', 'orange', 'yellow', 'green', 'purple'];
 
-
     return {
       playerId,
       players,
@@ -580,7 +632,7 @@ export default defineComponent({
       ResetGame,
       changeName,
       changeColor,
-      goBack
+      goBack,
     };
   },
 });
@@ -662,16 +714,12 @@ export default defineComponent({
   .material-symbols-outlined {
     font-size: 70px;
     line-height: 70px;
-    font-variation-settings:
-      'FILL' 0,
-      'wght' 400,
-      'GRAD' 0,
-      'opsz' 48
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
   }
   @media only screen and (max-width: 600px) {
     .material-symbols-outlined {
-    font-size: 40px;
-    line-height: 40px;
+      font-size: 40px;
+      line-height: 40px;
     }
   }
 
@@ -733,7 +781,6 @@ export default defineComponent({
   }
 
   input[type='text'],
-
   input[type='text'] {
     outline: 0;
     padding-left: 0.5em;
