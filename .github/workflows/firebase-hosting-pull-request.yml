@@ -8,10 +8,18 @@ jobs:
     if: '${{ github.event.pull_request.head.repo.full_name == github.repository }}'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: npm ci && npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MULTIPLAY_62301 }}'
-          projectId: multiplay-62301
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up Node (14)
+      uses: actions/setup-node@v1
+      with:
+        node-version: 14.18.x
+    - name: install
+      run: cd multiPlay && npm ci && npm install -g @quasar/cli && quasar build
+    - name: firebase
+      uses: FirebaseExtended/action-hosting-deploy@v0
+      with:
+        entrypoint: ./multiPlay
+        repoToken: '${{ secrets.GITHUB_TOKEN }}'
+        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MULTIPLAY_62301 }}'
+        projectId: multiplay-62301
