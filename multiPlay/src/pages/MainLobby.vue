@@ -268,15 +268,13 @@ export default defineComponent({
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
         playerId.value = user.uid;
-        const name = 'Dulli';
 
         playerRef = storageRef(db, 'players/' + playerId.value);
         set(playerRef, {
           id: playerId.value,
-          name: name,
         });
 
-        //remove Player from Firebase, whem disconnect
+        //remove Player from Firebase, when disconnect
         onDisconnect(playerRef).remove().then(() => {
           allLobbysArray.value.forEach(lobby => {
             if(lobby.playerId === playerId.value){
