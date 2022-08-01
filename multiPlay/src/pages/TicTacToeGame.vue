@@ -4,12 +4,21 @@
       <div class="player-info">
         <div class="info">
           <div>
-            <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
-              standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+            <q-input
+              outlined
+              :model-value="playerNameInput"
+              label="Dein Name"
+              bg-color="white"
+              standout="bg-orange-2 text-black"
+              @update:model-value="(value) => changeName(value)"
+            />
           </div>
           <div>
-            <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
-              @click="changeColor" />
+            <q-btn
+              :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color"
+              label="Change color"
+              @click="changeColor"
+            />
           </div>
         </div>
         <div>
@@ -19,19 +28,29 @@
       <main class="main-container">
         <h1 class="main-container_h1">Tic Tac Toe</h1>
 
-        <h3 v-if="oPlayer.id !== ''" class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name :
-          oPlayer.name }}'s
-          turn</h3>
+        <h3 v-if="oPlayer.id !== ''" class="main-container_h3">
+          Player {{ currentSign === 'X' ? xPlayer.name : oPlayer.name }}'s turn
+        </h3>
         <h3 v-else class="main-container_h3">You need another Player!</h3>
 
         <div class="main-container_board">
           <div v-for="(row, x) in board" :key="x" class="board_div">
-            <div v-for="(cell, y) in row" :key="y" @click="oPlayer.id !== '' ? MakeMove(x, y): null" class="div_cell">
-              <span class="material-symbols-outlined"
-                :style="cell === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
-                {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
+            <div
+              v-for="(cell, y) in row"
+              :key="y"
+              @click="oPlayer.id !== '' ? MakeMove(x, y) : null"
+              class="div_cell"
+            >
+              <span
+                class="material-symbols-outlined"
+                :style="
+                  cell === 'X'
+                    ? 'color:' + xPlayer.color
+                    : 'color:' + oPlayer.color
+                "
+              >
+                {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : '' }}
               </span>
-
             </div>
           </div>
         </div>
@@ -40,20 +59,30 @@
           <h2 v-if="winner" class="bottom_h2">
             Player '{{ winner === 'X' ? xPlayer.name : oPlayer.name }}' wins!
           </h2>
-          <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame">Reset</q-btn>
+          <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame"
+            >Reset</q-btn
+          >
         </div>
         <div class="score" v-if="xPlayer.gamesWon >= oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} {{ xPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
+          <div class="score-div">
+            {{ xPlayer.name }}: {{ xPlayer.gamesWon }}
+            {{ xPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
           </div>
-          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} {{ oPlayer.gamesWon ===
-            1 ? 'win!' : 'wins!' }}</div>
+          <div v-if="oPlayer.id !== ''" class="score-div">
+            {{ oPlayer.name }}: {{ oPlayer.gamesWon }}
+            {{ oPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
+          </div>
         </div>
         <div class="score" v-if="xPlayer.gamesWon < oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} {{ oPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
+          <div class="score-div">
+            {{ oPlayer.name }}: {{ oPlayer.gamesWon }}
+            {{ oPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
           </div>
-          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} {{ xPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
+          <div class="score-div">
+            {{ xPlayer.name }}: {{ xPlayer.gamesWon }}
+            {{ xPlayer.gamesWon === 1 ? 'win!' : 'wins!' }}
           </div>
         </div>
       </main>
@@ -76,7 +105,7 @@ import {
   child,
   //onChildAdded,
   onChildRemoved,
-remove,
+  remove,
 } from 'firebase/database';
 import { useRoute, useRouter } from 'vue-router';
 import { Players } from './CoinGame.vue';
@@ -87,7 +116,7 @@ interface DatabaseEntry {
   name: string;
   sign: string;
   gamesWon: number;
-  color: string
+  color: string;
 }
 
 export default defineComponent({
@@ -121,7 +150,7 @@ export default defineComponent({
     const changeColor = () => {
       const myColorIndex = playerColors.indexOf(players[playerId.value].color);
       const nextColor = playerColors[myColorIndex + 1] || playerColors[0];
-      playerCurrentColor.value = nextColor
+      playerCurrentColor.value = nextColor;
       update(playerLobbyRef, {
         color: nextColor,
       });
@@ -131,14 +160,14 @@ export default defineComponent({
       initGame();
     });
 
-    const currentSign = ref<string>('X')
+    const currentSign = ref<string>('X');
 
     const xPlayer = ref<DatabaseEntry>({
       id: '',
       name: '',
       sign: 'X',
       gamesWon: 0,
-      color: 'orange'
+      color: 'orange',
     });
 
     const oPlayer = ref<DatabaseEntry>({
@@ -146,7 +175,7 @@ export default defineComponent({
       name: '',
       sign: 'O',
       gamesWon: 0,
-      color: 'purple'
+      color: 'purple',
     });
 
     let currentPlayerRef: DatabaseReference;
@@ -179,8 +208,8 @@ export default defineComponent({
 
     const winner = computed(() => {
       let tempArray = board.value.reduce((acc, val) => acc.concat(val), []);
-      let tempWinner = CalculateWinner(tempArray)
-      if(tempWinner === 'X'){
+      let tempWinner = CalculateWinner(tempArray);
+      if (tempWinner === 'X') {
         const winningPlayerRef = storageRef(
           db,
           `lobbys/${lobbyId.value}/players/${xPlayer.value.id}`
@@ -255,10 +284,10 @@ export default defineComponent({
           players = snapshot.val() || {};
           Object.keys(players).forEach((key) => {
             const characterState = players[key] as unknown as DatabaseEntry;
-            if(characterState.sign === 'X'){
-              xPlayer.value = characterState
+            if (characterState.sign === 'X') {
+              xPlayer.value = characterState;
             } else if (characterState.sign === 'O') {
-              oPlayer.value = characterState
+              oPlayer.value = characterState;
             }
           });
           if (Object.keys(players).length === 1) {
@@ -267,10 +296,10 @@ export default defineComponent({
               name: '',
               sign: 'O',
               gamesWon: 0,
-              color: 'purple'
-            }
+              color: 'purple',
+            };
             update(currLobbyRef, {
-              currentPlayers: 1
+              currentPlayers: 1,
             });
           }
         });
@@ -291,8 +320,8 @@ export default defineComponent({
         //remove character DOM Element when they leave
         onChildRemoved(allPlayersRef, (snapshot) => {
           const removedPlayer = snapshot.val();
-          if (lobbyId.value.includes(removedPlayer.id)){
-            router.push({ name: 'MainLobby' })
+          if (lobbyId.value.includes(removedPlayer.id)) {
+            router.push({ name: 'MainLobby' });
           }
         });
 
@@ -306,11 +335,14 @@ export default defineComponent({
     };
 
     const goBack = () => {
-      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`);
-      remove(playerRef)
-      ResetGame()
-      router.push({ name: 'MainLobby' })
-    }
+      const playerRef = storageRef(
+        db,
+        `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`
+      );
+      remove(playerRef);
+      ResetGame();
+      router.push({ name: 'MainLobby' });
+    };
 
     //*****firebase stuff*****
     const auth = getAuth();
@@ -369,7 +401,7 @@ export default defineComponent({
                 name: playerNameInput.value,
                 sign: 'O',
                 gamesWon: 0,
-                color: randomFromArray(playerColors)
+                color: randomFromArray(playerColors),
               });
             }
           });
@@ -445,14 +477,14 @@ export default defineComponent({
       changeName,
       changeColor,
       playerCurrentColor,
-      goBack
+      goBack,
     };
   },
 });
 </script>
 
 <style lang="scss" scoped scss>
-.game-container{
+.game-container {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -517,16 +549,16 @@ export default defineComponent({
   }
 
   .material-symbols-outlined {
-  font-size: 70px;
-  line-height: 70px;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+    font-size: 70px;
+    line-height: 70px;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
   }
 
   .player-info {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    .info{
+    .info {
       padding: 1em;
       display: flex;
       gap: 0.5em;
@@ -562,12 +594,12 @@ export default defineComponent({
     }
   }
 
-  .score{
+  .score {
     margin-top: 40px;
-    .score-div{
+    .score-div {
       font-size: 20px;
-        line-height: 28px;
-        margin-bottom: 4px;
+      line-height: 28px;
+      margin-bottom: 4px;
     }
   }
 
@@ -586,8 +618,7 @@ export default defineComponent({
   }
 
   input[type='text']:focus {
-    border-color: #f000ff;
+    border-color: red;
   }
 }
-
 </style>

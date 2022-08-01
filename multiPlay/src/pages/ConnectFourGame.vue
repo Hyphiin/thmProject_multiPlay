@@ -4,12 +4,21 @@
       <div class="player-info">
         <div class="info">
           <div>
-            <q-input outlined :model-value="playerNameInput" label="Dein Name" bg-color="white"
-              standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+            <q-input
+              outlined
+              :model-value="playerNameInput"
+              label="Dein Name"
+              bg-color="white"
+              standout="bg-orange-2 text-black"
+              @update:model-value="(value) => changeName(value)"
+            />
           </div>
           <div>
-            <q-btn :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color" label="Change color"
-              @click="changeColor" />
+            <q-btn
+              :color="playerId === xPlayer.id ? xPlayer.color : oPlayer.color"
+              label="Change color"
+              @click="changeColor"
+            />
           </div>
         </div>
         <div>
@@ -19,35 +28,58 @@
       <main class="main-container">
         <h1 class="main-container_h1">Connect Four</h1>
 
-        <h3 v-if="oPlayer.id !== ''" class="main-container_h3">Player {{ currentSign === 'X' ? xPlayer.name :
-          oPlayer.name }}'s
-          turn</h3>
+        <h3 v-if="oPlayer.id !== ''" class="main-container_h3">
+          Player {{ currentSign === 'X' ? xPlayer.name : oPlayer.name }}'s turn
+        </h3>
         <h3 v-else class="main-container_h3">You need another Player!</h3>
 
         <div class="main-container_board">
           <div v-for="(row, x) in board" :key="x" class="board_div">
-            <div v-for="(cell, y) in row" :key="y" @click="oPlayer.id !== '' ? MakeMove(x, y): null" class="div_cell">
-              <span class="material-symbols-outlined"
-                :style="cell === 'X' ? ('color:' + xPlayer.color) : ('color:' + oPlayer.color)">
-                {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : ''}}
+            <div
+              v-for="(cell, y) in row"
+              :key="y"
+              @click="oPlayer.id !== '' ? MakeMove(x, y) : null"
+              class="div_cell"
+            >
+              <span
+                class="material-symbols-outlined"
+                :style="
+                  cell === 'X'
+                    ? 'color:' + xPlayer.color
+                    : 'color:' + oPlayer.color
+                "
+              >
+                {{ cell === 'X' ? 'Close' : cell === 'O' ? 'Circle' : '' }}
               </span>
             </div>
           </div>
         </div>
 
         <div class="main-container_bottom">
-          <h2 v-if="winner" class="bottom_h2">Player '{{ winner === 'X' ? xPlayer.name : oPlayer.name }}' wins!</h2>
-          <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame">Reset</q-btn>
+          <h2 v-if="winner" class="bottom_h2">
+            Player '{{ winner === 'X' ? xPlayer.name : oPlayer.name }}' wins!
+          </h2>
+          <q-btn class="bottom_resetBtn" color="secondary" @click="ResetGame"
+            >Reset</q-btn
+          >
         </div>
         <div class="score" v-if="xPlayer.gamesWon >= oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
-          <div v-if="oPlayer.id !== ''" class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
+          <div class="score-div">
+            {{ xPlayer.name }}: {{ xPlayer.gamesWon }} points!
+          </div>
+          <div v-if="oPlayer.id !== ''" class="score-div">
+            {{ oPlayer.name }}: {{ oPlayer.gamesWon }} points!
+          </div>
         </div>
         <div class="score" v-if="xPlayer.gamesWon < oPlayer.gamesWon">
           <h1 class="main-container_h1">SCORES:</h1>
-          <div class="score-div">{{ oPlayer.name}}: {{ oPlayer.gamesWon}} points!</div>
-          <div class="score-div">{{ xPlayer.name}}: {{ xPlayer.gamesWon}} points!</div>
+          <div class="score-div">
+            {{ oPlayer.name }}: {{ oPlayer.gamesWon }} points!
+          </div>
+          <div class="score-div">
+            {{ xPlayer.name }}: {{ xPlayer.gamesWon }} points!
+          </div>
         </div>
       </main>
     </div>
@@ -68,7 +100,7 @@ import {
   get,
   child,
   onChildRemoved,
-remove,
+  remove,
   // onChildAdded,
 } from 'firebase/database';
 import { useRoute, useRouter } from 'vue-router';
@@ -117,20 +149,20 @@ export default defineComponent({
     const changeColor = () => {
       const myColorIndex = playerColors.indexOf(players[playerId.value].color);
       const nextColor = playerColors[myColorIndex + 1] || playerColors[0];
-      playerCurrentColor.value = nextColor
+      playerCurrentColor.value = nextColor;
       update(playerLobbyRef, {
         color: nextColor,
       });
     };
 
-    const currentSign = ref<string>('X')
+    const currentSign = ref<string>('X');
 
     const xPlayer = ref<DatabaseEntry>({
       id: '',
       name: '',
       sign: 'X',
       gamesWon: 0,
-      color: 'orange'
+      color: 'orange',
     });
 
     const oPlayer = ref<DatabaseEntry>({
@@ -138,7 +170,7 @@ export default defineComponent({
       name: '',
       sign: 'O',
       gamesWon: 0,
-      color: 'purple'
+      color: 'purple',
     });
 
     let currentPlayerRef: DatabaseReference;
@@ -269,7 +301,7 @@ export default defineComponent({
     };
 
     const winner = computed(() => {
-      let tempWinner = CalculateWinner(board.value)
+      let tempWinner = CalculateWinner(board.value);
       if (tempWinner === 'X') {
         const winningPlayerRef = storageRef(
           db,
@@ -354,9 +386,9 @@ export default defineComponent({
           Object.keys(players).forEach((key) => {
             const characterState = players[key] as unknown as DatabaseEntry;
             if (characterState.sign === 'X') {
-              xPlayer.value = characterState
-            } else if(characterState.sign === 'O'){
-              oPlayer.value = characterState
+              xPlayer.value = characterState;
+            } else if (characterState.sign === 'O') {
+              oPlayer.value = characterState;
             }
           });
           if (Object.keys(players).length === 1) {
@@ -365,10 +397,10 @@ export default defineComponent({
               name: '',
               sign: 'O',
               gamesWon: 0,
-              color: 'purple'
-            }
+              color: 'purple',
+            };
             update(currLobbyRef, {
-              currentPlayers: 1
+              currentPlayers: 1,
             });
           }
         });
@@ -390,7 +422,7 @@ export default defineComponent({
         onChildRemoved(allPlayersRef, (snapshot) => {
           const removedPlayer = snapshot.val();
           if (lobbyId.value.includes(removedPlayer.id)) {
-            router.push({ name: 'MainLobby' })
+            router.push({ name: 'MainLobby' });
           }
         });
 
@@ -404,11 +436,14 @@ export default defineComponent({
     };
 
     const goBack = () => {
-      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`);
-      remove(playerRef)
-      ResetGame()
-      router.push({ name: 'MainLobby' })
-    }
+      const playerRef = storageRef(
+        db,
+        `lobbys/${lobbyId.value}/players/${oPlayer.value.id}`
+      );
+      remove(playerRef);
+      ResetGame();
+      router.push({ name: 'MainLobby' });
+    };
 
     //*****firebase stuff*****
     const auth = getAuth();
@@ -459,7 +494,7 @@ export default defineComponent({
                 name: playerNameInput.value,
                 sign: 'X',
                 gamesWon: 0,
-                color: randomFromArray(playerColors)
+                color: randomFromArray(playerColors),
               });
             } else {
               update(playerLobbyRef, {
@@ -467,7 +502,7 @@ export default defineComponent({
                 name: playerNameInput.value,
                 sign: 'O',
                 gamesWon: 0,
-                color: randomFromArray(playerColors)
+                color: randomFromArray(playerColors),
               });
             }
           });
@@ -543,7 +578,7 @@ export default defineComponent({
       createName,
       changeColor,
       playerCurrentColor,
-      goBack
+      goBack,
     };
   },
 });
@@ -628,8 +663,8 @@ export default defineComponent({
   }
   @media only screen and (max-width: 600px) {
     .material-symbols-outlined {
-    font-size: 40px;
-    line-height: 40px;
+      font-size: 40px;
+      line-height: 40px;
     }
   }
 
@@ -703,5 +738,4 @@ export default defineComponent({
     border-color: #f000ff;
   }
 }
-
 </style>

@@ -4,11 +4,22 @@
     <div class="player-info">
       <div class="info">
         <div>
-          <q-input outlined :model-value="playerNameInput" label="Your Name" bg-color="white"
-            standout="bg-light-green-11 text-black" @update:model-value="(value) => changeName(value)" />
+          <q-input
+            outlined
+            :model-value="playerNameInput"
+            label="Your Name"
+            bg-color="white"
+            standout="bg-orange-2 text-black"
+            @update:model-value="(value) => changeName(value)"
+          />
         </div>
         <div>
-          <q-btn class="changeColorBtn" label="Change Color" :color="currentColor" @click="changeColor" />
+          <q-btn
+            class="changeColorBtn"
+            label="Change Color"
+            :color="currentColor"
+            @click="changeColor"
+          />
         </div>
         <div class="goBackBtn">
           <q-btn icon="home" @click="goBack"></q-btn>
@@ -18,14 +29,20 @@
     <div class="score">
       <h1 class="main-container_h1">SCORES:</h1>
       <div v-for="player in sortedPlayers" :key="player.id" class="score-div">
-        {{ player.name}}: {{ player.coins}} coins!
+        {{ player.name }}: {{ player.coins }} coins!
       </div>
     </div>
   </q-page>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
+import {
+  computed,
+  defineComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from 'vue';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import {
   getDatabase,
@@ -38,8 +55,8 @@ import {
   onChildRemoved,
   update,
   remove,
-get,
-child,
+  get,
+  child,
 } from 'firebase/database';
 import { KeyPressListener } from '../components/KeyPressListener';
 import { useRoute, useRouter } from 'vue-router';
@@ -78,8 +95,8 @@ interface MapData {
 }
 
 interface Coordinates {
-  x: number,
-  y: number
+  x: number;
+  y: number;
 }
 
 export default defineComponent({
@@ -89,7 +106,6 @@ export default defineComponent({
     const db = getDatabase();
     const route = useRoute();
     const router = useRouter();
-
 
     let playerId = ref<string>('');
     let lobbyId = ref<string>('');
@@ -101,12 +117,12 @@ export default defineComponent({
     let coinElements: CoinElements = {};
 
     const sortedPlayers = computed(() => {
-      let tempArray: DatabaseEntry[]  = []
-      if(players.value !== undefined){
-        tempArray = Object.values(players.value).sort((a, b) => compare(a, b))
+      let tempArray: DatabaseEntry[] = [];
+      if (players.value !== undefined) {
+        tempArray = Object.values(players.value).sort((a, b) => compare(a, b));
       }
-      return tempArray
-    })
+      return tempArray;
+    });
 
     function compare(a: DatabaseEntry, b: DatabaseEntry) {
       if (a.coins > b.coins) {
@@ -122,8 +138,7 @@ export default defineComponent({
       document.removeEventListener('keydown', () => null);
       document.removeEventListener('keyup', () => null);
       initGame();
-    })
-
+    });
 
     // const gameContainer = document.querySelector('.game-container');
     const gameContainer = ref<HTMLElement>();
@@ -132,8 +147,8 @@ export default defineComponent({
     const playerNameInput = ref<string>();
 
     const changeName = (newValue: string | number | null) => {
-      if(typeof newValue === 'string'){
-         playerNameInput.value = newValue
+      if (typeof newValue === 'string') {
+        playerNameInput.value = newValue;
         update(playerLobbyRef, {
           name: newValue,
         });
@@ -141,12 +156,14 @@ export default defineComponent({
     };
 
     //updates Player Color
-    const currentColor = ref<string>('')
+    const currentColor = ref<string>('');
     const changeColor = () => {
-      if(players.value !== undefined){
-        const mySkinIndex = playerColors.indexOf(players.value[playerId.value].color);
+      if (players.value !== undefined) {
+        const mySkinIndex = playerColors.indexOf(
+          players.value[playerId.value].color
+        );
         const nextColor = playerColors[mySkinIndex + 1] || playerColors[0];
-        currentColor.value = nextColor
+        currentColor.value = nextColor;
         update(playerLobbyRef, {
           color: nextColor,
         });
@@ -155,9 +172,12 @@ export default defineComponent({
 
     //place Coin
     const placeCoin = () => {
-      if(lobbyId.value !== ''){
+      if (lobbyId.value !== '') {
         const { x, y } = getRandomSafeSpot();
-        const coinRef = storageRef(db, `lobbys/${lobbyId.value}/coins/${getKeyString(x, y)}`);
+        const coinRef = storageRef(
+          db,
+          `lobbys/${lobbyId.value}/coins/${getKeyString(x, y)}`
+        );
         set(coinRef, {
           x,
           y,
@@ -178,68 +198,74 @@ export default defineComponent({
         update(playerLobbyRef, {
           coins: players.value[playerId.value].coins + 1,
         });
-        coins[key] = false
+        coins[key] = false;
       }
     };
 
-    let keyUp: KeyPressListener
-    let keyDown: KeyPressListener
-    let keyRight: KeyPressListener
-    let keyLeft: KeyPressListener
+    let keyUp: KeyPressListener;
+    let keyDown: KeyPressListener;
+    let keyRight: KeyPressListener;
+    let keyLeft: KeyPressListener;
 
     const initGame = () => {
       keyUp = new KeyPressListener('ArrowUp', () => handleArrowPress(0, -1));
       keyDown = new KeyPressListener('ArrowDown', () => handleArrowPress(0, 1));
-      keyRight = new KeyPressListener('ArrowRight', () => handleArrowPress(1, 0));
-      keyLeft = new KeyPressListener('ArrowLeft', () => handleArrowPress(-1, 0));
+      keyRight = new KeyPressListener('ArrowRight', () =>
+        handleArrowPress(1, 0)
+      );
+      keyLeft = new KeyPressListener('ArrowLeft', () =>
+        handleArrowPress(-1, 0)
+      );
 
+      if (route.params.lobbyId) {
+        lobbyId.value = route.params.lobbyId.toString();
 
-      if(route.params.lobbyId){
-      lobbyId.value = route.params.lobbyId.toString()
+        const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
+        const allCoinsRef = storageRef(db, `lobbys/${lobbyId.value}/coins`);
+        const currLobbyRef = storageRef(db, `lobbys/${lobbyId.value}`);
 
-      const allPlayersRef = storageRef(db, `lobbys/${lobbyId.value}/players`);
-      const allCoinsRef = storageRef(db, `lobbys/${lobbyId.value}/coins`);
-      const currLobbyRef = storageRef(db, `lobbys/${lobbyId.value}`);
-
-      //fires when change occurs
-      onValue(allPlayersRef, (snapshot) => {
-        players.value = snapshot.val() || {};
-        if(players.value !== undefined){
-          Object.keys(players.value).forEach((key) => {
-            if (players.value !== undefined) {
-              const characterState = players.value[key] as DatabaseEntry;
-              let el = playerElements[key];
-              //update the dom
-              if (el instanceof HTMLDivElement) {
-                let temp = el.querySelector('.Character_name') as Element
-                temp.textContent = characterState.name;
-                let temp2 = el.querySelector('.Character_coins') as Element
-                temp2.textContent = characterState.coins.toString();
-                el.setAttribute('data-color', characterState.color);
-                el.setAttribute('data-direction', characterState.direction);
-                const top = 16 * characterState.y - 4 + 'px';
-                const left = 16 * characterState.x + 'px';
-                el.style.transform = `translate3d(${left},${top}, 0)`;
+        //fires when change occurs
+        onValue(allPlayersRef, (snapshot) => {
+          players.value = snapshot.val() || {};
+          if (players.value !== undefined) {
+            Object.keys(players.value).forEach((key) => {
+              if (players.value !== undefined) {
+                const characterState = players.value[key] as DatabaseEntry;
+                let el = playerElements[key];
+                //update the dom
+                if (el instanceof HTMLDivElement) {
+                  let temp = el.querySelector('.Character_name') as Element;
+                  temp.textContent = characterState.name;
+                  let temp2 = el.querySelector('.Character_coins') as Element;
+                  temp2.textContent = characterState.coins.toString();
+                  el.setAttribute('data-color', characterState.color);
+                  el.setAttribute('data-direction', characterState.direction);
+                  const top = 16 * characterState.y - 4 + 'px';
+                  const left = 16 * characterState.x + 'px';
+                  el.style.transform = `translate3d(${left},${top}, 0)`;
+                }
               }
-            }
-          });
-          if (Object.keys(players.value).length > 0 && lobbyId.value.includes(playerId.value)) {
-            update(currLobbyRef, {
-              currentPlayers: Object.keys(players.value).length
             });
+            if (
+              Object.keys(players.value).length > 0 &&
+              lobbyId.value.includes(playerId.value)
+            ) {
+              update(currLobbyRef, {
+                currentPlayers: Object.keys(players.value).length,
+              });
+            }
           }
-        }
-      });
+        });
 
-      //fires when a new node is added to the db
-      onChildAdded(allPlayersRef, (snapshot) => {
-        const addedPlayer = snapshot.val();
-        const characterElement = document.createElement('div');
-        characterElement.classList.add('Character', 'grid-cell');
-        if (addedPlayer.id === playerId.value) {
-          characterElement.classList.add('you');
-        }
-        characterElement.innerHTML = `
+        //fires when a new node is added to the db
+        onChildAdded(allPlayersRef, (snapshot) => {
+          const addedPlayer = snapshot.val();
+          const characterElement = document.createElement('div');
+          characterElement.classList.add('Character', 'grid-cell');
+          if (addedPlayer.id === playerId.value) {
+            characterElement.classList.add('you');
+          }
+          characterElement.innerHTML = `
           <div class="Character_shadow grid-cell"></div>
           <div class="Character_sprite grid-cell"></div>
           <div class="Character_name-container">
@@ -249,84 +275,88 @@ export default defineComponent({
           <div class="Character_you-arrow"></div>
         `;
 
-        playerElements[addedPlayer.id] = characterElement;
+          playerElements[addedPlayer.id] = characterElement;
 
-        //fill in some initial states
-        if (
-          characterElement instanceof HTMLDivElement &&
-          characterElement !== null
-        ) {
-          let temp = characterElement.querySelector('.Character_name') as Element
-          temp.textContent = addedPlayer.name;
-          let temp2 =characterElement.querySelector('.Character_coins') as Element
-          temp2.textContent =  addedPlayer.coins;
-          characterElement.setAttribute('data-color', addedPlayer.color);
-          characterElement.setAttribute(
-            'data-direction',
-            addedPlayer.direction
-          );
-          const top = 16 * addedPlayer.y - 4 + 'px';
-          const left = 16 * addedPlayer.x + 'px';
-          characterElement.style.transform = `translate3d(${left},${top}, 0)`;
-          gameContainer.value?.appendChild(characterElement);
-        }
-      });
+          //fill in some initial states
+          if (
+            characterElement instanceof HTMLDivElement &&
+            characterElement !== null
+          ) {
+            let temp = characterElement.querySelector(
+              '.Character_name'
+            ) as Element;
+            temp.textContent = addedPlayer.name;
+            let temp2 = characterElement.querySelector(
+              '.Character_coins'
+            ) as Element;
+            temp2.textContent = addedPlayer.coins;
+            characterElement.setAttribute('data-color', addedPlayer.color);
+            characterElement.setAttribute(
+              'data-direction',
+              addedPlayer.direction
+            );
+            const top = 16 * addedPlayer.y - 4 + 'px';
+            const left = 16 * addedPlayer.x + 'px';
+            characterElement.style.transform = `translate3d(${left},${top}, 0)`;
+            gameContainer.value?.appendChild(characterElement);
+          }
+        });
 
-      //remove character DOM Element when they leave
-      onChildRemoved(allPlayersRef, (snapshot) => {
-        const removedPlayerId = snapshot.val().id;
+        //remove character DOM Element when they leave
+        onChildRemoved(allPlayersRef, (snapshot) => {
+          const removedPlayerId = snapshot.val().id;
 
-        const tempVar = playerElements[removedPlayerId] as HTMLDivElement;
-        gameContainer.value?.removeChild(tempVar);
-        delete playerElements[removedPlayerId];
-        if (lobbyId.value.includes(removedPlayerId)) {
-          keyUp.unbind()
-          keyDown.unbind()
-          keyRight.unbind()
-          keyLeft.unbind()
-          router.push({ name: 'MainLobby' })
-        }
-        lobbyId.value = ''
-      });
+          const tempVar = playerElements[removedPlayerId] as HTMLDivElement;
+          gameContainer.value?.removeChild(tempVar);
+          delete playerElements[removedPlayerId];
+          if (lobbyId.value.includes(removedPlayerId)) {
+            keyUp.unbind();
+            keyDown.unbind();
+            keyRight.unbind();
+            keyLeft.unbind();
+            router.push({ name: 'MainLobby' });
+          }
+          lobbyId.value = '';
+        });
 
-      onChildAdded(allCoinsRef, (snapshot) => {
-        const coin = snapshot.val();
-        const key: string = getKeyString(coin.x, coin.y);
-        coins[key] = true;
+        onChildAdded(allCoinsRef, (snapshot) => {
+          const coin = snapshot.val();
+          const key: string = getKeyString(coin.x, coin.y);
+          coins[key] = true;
 
-        //create the Coin DOM Element
-        const coinElement = document.createElement('div');
-        coinElement.classList.add('Coin', 'grid-cell');
-        coinElement.innerHTML = `
+          //create the Coin DOM Element
+          const coinElement = document.createElement('div');
+          coinElement.classList.add('Coin', 'grid-cell');
+          coinElement.innerHTML = `
         <div class="Coin_shadow grid-cell"></div>
         <div class="Coin_sprite grid-cell"></div>
         `;
-        //Position the Element
-        const top = 16 * coin.y - 4 + 'px';
-        const left = 16 * coin.x + 'px';
-        coinElement.style.transform = `translate3d(${left}, ${top}, 0)`;
-        //Keep a reference for removal later and add to DOM
-        coinElements[key] = coinElement;
-        gameContainer.value?.appendChild(coinElement);
-      });
+          //Position the Element
+          const top = 16 * coin.y - 4 + 'px';
+          const left = 16 * coin.x + 'px';
+          coinElement.style.transform = `translate3d(${left}, ${top}, 0)`;
+          //Keep a reference for removal later and add to DOM
+          coinElements[key] = coinElement;
+          gameContainer.value?.appendChild(coinElement);
+        });
 
-      onChildRemoved(allCoinsRef, (snapshot) => {
-        const { x, y } = snapshot.val();
-        const keyToRemove = getKeyString(x, y);
-        gameContainer.value?.removeChild(coinElements[keyToRemove]);
-        delete coinElements[keyToRemove];
-      });
+        onChildRemoved(allCoinsRef, (snapshot) => {
+          const { x, y } = snapshot.val();
+          const keyToRemove = getKeyString(x, y);
+          gameContainer.value?.removeChild(coinElements[keyToRemove]);
+          delete coinElements[keyToRemove];
+        });
 
-      //Place the first coin
-      placeCoin();
+        //Place the first coin
+        placeCoin();
       }
     };
 
     //*****Key Events */
 
     const handleArrowPress = (xChange: number, yChange: number) => {
-      console.log("handlePress", xChange, yChange)
-      if (players.value !== undefined){
+      console.log('handlePress', xChange, yChange);
+      if (players.value !== undefined) {
         const newX = players.value[playerId.value].x + xChange;
         const newY = players.value[playerId.value].y + yChange;
 
@@ -349,24 +379,27 @@ export default defineComponent({
     };
 
     const goBack = () => {
-      const playerRef = storageRef(db, `lobbys/${lobbyId.value}/players/${playerId.value}`);
-      remove(playerRef)
-      if(lobbyId.value.includes(playerId.value)){
+      const playerRef = storageRef(
+        db,
+        `lobbys/${lobbyId.value}/players/${playerId.value}`
+      );
+      remove(playerRef);
+      if (lobbyId.value.includes(playerId.value)) {
         playerId.value = '';
         lobbyId.value = '';
         players.value = {};
         playerElements = {};
         coins = {};
         coinElements = {};
-        document.removeEventListener('keydown', () => null );
+        document.removeEventListener('keydown', () => null);
         document.removeEventListener('keyup', () => null);
-        keyUp.unbind()
-        keyDown.unbind()
-        keyRight.unbind()
-        keyLeft.unbind()
+        keyUp.unbind();
+        keyDown.unbind();
+        keyRight.unbind();
+        keyLeft.unbind();
       }
-      router.push({ name: 'MainLobby' })
-    }
+      router.push({ name: 'MainLobby' });
+    };
 
     //*****firebase stuff*****
     const auth = getAuth();
@@ -397,33 +430,37 @@ export default defineComponent({
         const { x, y } = getRandomSafeSpot();
 
         playerRef = storageRef(db, 'players' + playerId.value);
-        get(child(playerRef, 'lobbyId')).then((snapshot) => {
-          if (snapshot.exists()) {
-            lobbyId.value = snapshot.val();
-          } else {
-            lobbyId.value = route.params.lobbyId.toString()
-          }
-        }).catch((error) => {
-          console.error(error);
-        }).then(() => {
-          playerLobbyRef = storageRef(db, `lobbys/${lobbyId.value}/players/` + playerId.value)
-          let tempColor = randomFromArray(playerColors) as string
-          update(playerLobbyRef, {
-            name: playerNameInput.value,
-            direction: 'right',
-            color: tempColor,
-            x,
-            y,
-            coins: 0,
+        get(child(playerRef, 'lobbyId'))
+          .then((snapshot) => {
+            if (snapshot.exists()) {
+              lobbyId.value = snapshot.val();
+            } else {
+              lobbyId.value = route.params.lobbyId.toString();
+            }
+          })
+          .catch((error) => {
+            console.error(error);
+          })
+          .then(() => {
+            playerLobbyRef = storageRef(
+              db,
+              `lobbys/${lobbyId.value}/players/` + playerId.value
+            );
+            let tempColor = randomFromArray(playerColors) as string;
+            update(playerLobbyRef, {
+              name: playerNameInput.value,
+              direction: 'right',
+              color: tempColor,
+              x,
+              y,
+              coins: 0,
+            });
+            currentColor.value = tempColor;
           });
-          currentColor.value = tempColor
-        }
-        )
 
         //remove Player from Firebase, when disconnect
         onDisconnect(playerRef).remove();
         onDisconnect(playerLobbyRef).remove();
-
       } else {
         // User is signed out
         // ...
@@ -431,7 +468,9 @@ export default defineComponent({
     });
 
     //*****helper Functions*****
-    const randomFromArray = (array: string[] | number[] | Coordinates[]): string | number | Coordinates => {
+    const randomFromArray = (
+      array: string[] | number[] | Coordinates[]
+    ): string | number | Coordinates => {
       return array[Math.floor(Math.random() * array.length)];
     };
 
@@ -518,7 +557,7 @@ export default defineComponent({
       }
     };
     //returns a randome StartSpot
-    function getRandomSafeSpot():Coordinates {
+    function getRandomSafeSpot(): Coordinates {
       //We don't look things up by key here, so just return an x/y
       const temp = randomFromArray([
         { x: 1, y: 4 },
@@ -545,9 +584,17 @@ export default defineComponent({
         { x: 8, y: 8 },
         { x: 11, y: 4 },
       ]);
-      return temp as Coordinates
+      return temp as Coordinates;
     }
-    return { gameContainer, playerNameInput, changeColor, changeName, currentColor, sortedPlayers, goBack };
+    return {
+      gameContainer,
+      playerNameInput,
+      changeColor,
+      changeName,
+      currentColor,
+      sortedPlayers,
+      goBack,
+    };
   },
 });
 </script>
@@ -567,7 +614,7 @@ export default defineComponent({
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  .info{
+  .info {
     position: absolute;
     top: 0;
     left: 0;
@@ -625,19 +672,16 @@ export default defineComponent({
       button {
         background-color: rgb(241, 157, 0);
         color: white;
-        border-radius: 50% ;
+        border-radius: 50%;
         width: 40px;
-        height: 40px ;
+        height: 40px;
         margin-right: 20px;
       }
-
     }
-
   }
-
 }
 .score {
-  color: white
+  color: white;
 }
 .main-container_h1 {
   margin-bottom: 8px;
